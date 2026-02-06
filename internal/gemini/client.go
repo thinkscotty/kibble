@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"
+const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
 // SettingsGetter is a minimal interface so gemini package does not import database.
 type SettingsGetter interface {
