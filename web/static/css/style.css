@@ -11,7 +11,7 @@
 }
 
 html {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Varela Round', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
 }
 
@@ -23,16 +23,20 @@ html[data-text-size="large"] { font-size: 18px; }
 /* ==================== Theme: Dark (default) ==================== */
 :root,
 [data-theme="dark"] {
-    --bg: #0f1117;
-    --bg-surface: #1a1d27;
-    --bg-surface-hover: #232733;
-    --bg-input: #232733;
-    --border: #2d3140;
+    --bg: #222F3E;
+    --bg-surface: #34495E;
+    --bg-surface-hover: #3d5570;
+    --bg-input: #2c3e50;
+    --border: #4a6380;
     --border-focus: var(--primary);
-    --text: #e4e6ec;
-    --text-muted: #8b8fa3;
-    --text-heading: #f0f1f5;
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --text: #C8D6E5;
+    --text-muted: #8fa4b8;
+    --text-heading: #f0f4f8;
+    --shadow: 0 2px 4px rgba(0, 0, 0, 0.2),
+              0 8px 24px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.25),
+                 0 16px 40px rgba(0, 0, 0, 0.3);
+    --shadow-nav: 0 2px 12px rgba(0, 0, 0, 0.3);
     --card-radius: 12px;
     --btn-radius: 8px;
     --input-radius: 8px;
@@ -41,16 +45,20 @@ html[data-text-size="large"] { font-size: 18px; }
 
 /* ==================== Theme: Light ==================== */
 [data-theme="light"] {
-    --bg: #f5f6fa;
-    --bg-surface: #ffffff;
-    --bg-surface-hover: #f0f1f5;
+    --bg: #FDFDFD;
+    --bg-surface: #F0F4F8;
+    --bg-surface-hover: #e2e8f0;
     --bg-input: #ffffff;
-    --border: #d8dae5;
+    --border: #cbd5e1;
     --border-focus: var(--primary);
-    --text: #1a1d27;
-    --text-muted: #6b7080;
-    --text-heading: #0f1117;
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --text: #222F3E;
+    --text-muted: #5a6a7e;
+    --text-heading: #1a2536;
+    --shadow: 0 1px 3px rgba(34, 47, 62, 0.08),
+              0 6px 20px rgba(34, 47, 62, 0.1);
+    --shadow-lg: 0 4px 8px rgba(34, 47, 62, 0.1),
+                 0 12px 32px rgba(34, 47, 62, 0.14);
+    --shadow-nav: 0 2px 12px rgba(34, 47, 62, 0.08);
     color-scheme: light;
 }
 
@@ -80,6 +88,7 @@ a:hover {
 .navbar {
     background-color: var(--bg-surface);
     border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-nav);
     padding: 0 1.5rem;
     display: flex;
     align-items: center;
@@ -96,6 +105,12 @@ a:hover {
     color: var(--primary);
     text-decoration: none;
     letter-spacing: -0.02em;
+    display: inline-block;
+    transition: transform 0.15s;
+}
+
+.nav-brand a:hover {
+    transform: scale(1.05);
 }
 
 .nav-links {
@@ -110,13 +125,14 @@ a:hover {
     font-size: 0.9rem;
     font-weight: 500;
     text-decoration: none;
-    transition: background-color 0.15s, color 0.15s;
+    transition: background-color 0.15s, color 0.15s, transform 0.15s;
 }
 
 .nav-link:hover {
     background-color: var(--bg-surface-hover);
     color: var(--text);
     text-decoration: none;
+    transform: scale(1.05);
 }
 
 .nav-link.active {
@@ -143,6 +159,12 @@ a:hover {
     padding: 1.5rem;
     margin-bottom: 1rem;
     box-shadow: var(--shadow);
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px) scale(1.01);
 }
 
 .card-header {
@@ -200,6 +222,13 @@ a:hover {
     background-color: var(--bg-surface-hover);
     border-radius: 8px;
     border-left: 3px solid var(--primary);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.topic-card .fact-item:hover {
+    transform: scale(1.015);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .topic-card .fact-content {
@@ -215,6 +244,11 @@ a:hover {
     gap: 1rem;
     padding: 1rem 0;
     border-bottom: 1px solid var(--border);
+    transition: transform 0.15s;
+}
+
+.topic-row:hover {
+    transform: scale(1.008);
 }
 
 .topic-row:last-child {
@@ -347,6 +381,12 @@ a:hover {
     padding: 1.25rem;
     text-align: center;
     box-shadow: var(--shadow);
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.stat-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px) scale(1.03);
 }
 
 .stat-value {
@@ -407,7 +447,7 @@ a:hover {
 .form-input:focus {
     outline: none;
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
 }
 
 .form-textarea {
@@ -445,12 +485,17 @@ a:hover {
     font-family: inherit;
     cursor: pointer;
     border: 1px solid transparent;
-    transition: background-color 0.15s, opacity 0.15s;
+    transition: background-color 0.15s, opacity 0.15s, transform 0.15s;
     white-space: nowrap;
 }
 
 .btn:hover {
     opacity: 0.9;
+    transform: scale(1.04);
+}
+
+.btn:active {
+    transform: scale(0.97);
 }
 
 .btn:disabled {
@@ -461,6 +506,7 @@ a:hover {
 .btn-primary {
     background-color: var(--primary);
     color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .btn-secondary {
@@ -497,6 +543,11 @@ a:hover {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    transition: transform 0.15s;
+}
+
+.badge:hover {
+    transform: scale(1.08);
 }
 
 .badge-active {
@@ -555,8 +606,13 @@ a:hover {
     letter-spacing: 0.05em;
 }
 
+.table tbody tr {
+    transition: background-color 0.15s, transform 0.15s;
+}
+
 .table tbody tr:hover {
     background-color: var(--bg-surface-hover);
+    transform: scale(1.005);
 }
 
 /* ==================== Alerts & Toasts ==================== */
@@ -585,7 +641,8 @@ a:hover {
     border-radius: var(--input-radius);
     font-size: 0.9rem;
     font-weight: 500;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15),
+                0 12px 32px rgba(0, 0, 0, 0.2);
     animation: toast-in 0.3s ease-out;
 }
 
