@@ -1,0 +1,116 @@
+{{define "title"}}Settings{{end}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1>Settings</h1>
+    {{if .Success}}<div class="alert alert-success">{{.Success}}</div>{{end}}
+</div>
+
+<form hx-post="/settings" hx-target="body" hx-swap="outerHTML" hx-push-url="false">
+
+    <!-- API Key Section -->
+    <div class="card">
+        <h3 class="card-title">Gemini API Key</h3>
+        <p class="text-muted text-sm">Enter your Google Gemini Flash 2.5 free-tier API key. Get one from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>.</p>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="gemini_api_key">API Key</label>
+                <input type="password" id="gemini_api_key" name="gemini_api_key"
+                       value="{{index .Settings "gemini_api_key"}}"
+                       placeholder="Enter your Gemini API key"
+                       class="form-input">
+            </div>
+            <div class="form-group form-group-sm" style="align-self: flex-end;">
+                <button type="button" class="btn btn-secondary"
+                        hx-post="/settings/apikey/test"
+                        hx-target="#apikey-test-result"
+                        hx-include="[name='gemini_api_key']">
+                    Test Key
+                </button>
+            </div>
+        </div>
+        <div id="apikey-test-result"></div>
+    </div>
+
+    <!-- AI Instructions -->
+    <div class="card">
+        <h3 class="card-title">AI Instructions</h3>
+        <div class="form-group">
+            <label for="ai_custom_instructions">Custom Instructions</label>
+            <p class="text-muted text-sm">Guide the AI on what kind of facts to generate (e.g., "Focus on lesser-known facts", "Include recent discoveries").</p>
+            <textarea id="ai_custom_instructions" name="ai_custom_instructions"
+                      class="form-input form-textarea" rows="3"
+                      placeholder="Optional: Guide the AI on fact selection...">{{index .Settings "ai_custom_instructions"}}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="ai_tone_instructions">Tone & Style</label>
+            <p class="text-muted text-sm">Set the tone, length, and syntax of generated facts (e.g., "Keep facts concise, under 2 sentences", "Use a casual, friendly tone").</p>
+            <textarea id="ai_tone_instructions" name="ai_tone_instructions"
+                      class="form-input form-textarea" rows="3"
+                      placeholder="Optional: Set the tone and style...">{{index .Settings "ai_tone_instructions"}}</textarea>
+        </div>
+    </div>
+
+    <!-- Appearance -->
+    <div class="card">
+        <h3 class="card-title">Appearance</h3>
+        <div class="form-row">
+            <div class="form-group form-group-sm">
+                <label for="theme_mode">Theme</label>
+                <select id="theme_mode" name="theme_mode" class="form-input">
+                    <option value="dark" {{if eq (index .Settings "theme_mode") "dark"}}selected{{end}}>Dark</option>
+                    <option value="light" {{if eq (index .Settings "theme_mode") "light"}}selected{{end}}>Light</option>
+                </select>
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="primary_color">Primary Color</label>
+                <input type="color" id="primary_color" name="primary_color"
+                       value="{{index .Settings "primary_color"}}" class="form-input form-color">
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="secondary_color">Secondary Color</label>
+                <input type="color" id="secondary_color" name="secondary_color"
+                       value="{{index .Settings "secondary_color"}}" class="form-input form-color">
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="text_size">Text Size</label>
+                <select id="text_size" name="text_size" class="form-input">
+                    <option value="small" {{if eq (index .Settings "text_size") "small"}}selected{{end}}>Small</option>
+                    <option value="medium" {{if eq (index .Settings "text_size") "medium"}}selected{{end}}>Medium</option>
+                    <option value="large" {{if eq (index .Settings "text_size") "large"}}selected{{end}}>Large</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Layout -->
+    <div class="card">
+        <h3 class="card-title">Dashboard Layout</h3>
+        <div class="form-row">
+            <div class="form-group form-group-sm">
+                <label for="card_columns">Card Columns</label>
+                <select id="card_columns" name="card_columns" class="form-input">
+                    <option value="1" {{if eq (index .Settings "card_columns") "1"}}selected{{end}}>1</option>
+                    <option value="2" {{if eq (index .Settings "card_columns") "2"}}selected{{end}}>2</option>
+                    <option value="3" {{if eq (index .Settings "card_columns") "3"}}selected{{end}}>3</option>
+                    <option value="4" {{if eq (index .Settings "card_columns") "4"}}selected{{end}}>4</option>
+                </select>
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="facts_per_topic_display">Facts Per Topic</label>
+                <input type="number" id="facts_per_topic_display" name="facts_per_topic_display"
+                       value="{{index .Settings "facts_per_topic_display"}}" min="1" max="50" class="form-input">
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="similarity_threshold">Similarity Threshold</label>
+                <input type="number" id="similarity_threshold" name="similarity_threshold"
+                       value="{{index .Settings "similarity_threshold"}}" min="0" max="1" step="0.05" class="form-input">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions-footer">
+        <button type="submit" class="btn btn-primary btn-lg">Save Settings</button>
+    </div>
+</form>
+{{end}}

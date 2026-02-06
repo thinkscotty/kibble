@@ -1,0 +1,101 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
+	"github.com/thinkscotty/kibble/internal/config"
+	"github.com/thinkscotty/kibble/internal/database"
+	"github.com/thinkscotty/kibble/internal/gemini"
+	"github.com/thinkscotty/kibble/internal/scheduler"
+	"github.com/thinkscotty/kibble/internal/server"
+	"github.com/thinkscotty/kibble/internal/similarity"
+)
+
+var (
+	version   = "dev"
+	buildTime = "unknown"
+)
+
+func main() {
+	configPath := flag.String("config", "config.yaml", "Path to configuration file")
+	showVersion := flag.Bool("version", false, "Show version and exit")
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("Kibble %s (built %s)\n", version, buildTime)
+		os.Exit(0)
+	}
+
+	// Load configuration
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		slog.Error("Failed to load config", "error", err)
+		os.Exit(1)
+	}
+
+	// Initialize logger
+	var logLevel slog.Level
+	switch strings.ToLower(cfg.Logging.Level) {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "warn":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
+
+	slog.Info("Starting Kibble", "version", version)
+
+	// Initialize database
+	db, err := database.New(cfg.Database.Path)
+	if err != nil {
+		slog.Error("Failed to initialize database", "error", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	slog.Info("Database initialized", "path", cfg.Database.Path)
+
+	// Initialize services
+	geminiClient := gemini.NewClient(db)
+	sim := similarity.New(cfg.Similarity.Threshold, cfg.Similarity.NGramSize)
+	sched := scheduler.New(db, geminiClient, sim)
+
+	// Build HTTP server
+	srv := server.New(cfg, db, geminiClient, sim, sched)
+
+	// Start scheduler in background
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go sched.Run(ctx)
+
+	// Handle shutdown signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigCh
+		slog.Info("Shutting down...")
+		cancel()
+		srv.Shutdown(context.Background())
+	}()
+
+	// Start serving
+	slog.Info("Server listening", "addr", fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port))
+	if err := srv.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		slog.Error("Server error", "error", err)
+		os.Exit(1)
+	}
+}

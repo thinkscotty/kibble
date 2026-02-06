@@ -1,0 +1,84 @@
+{{define "title"}}Topics{{end}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1>Topics</h1>
+</div>
+
+<!-- Add Topic Form -->
+<div class="card">
+    <h3 class="card-title">Add New Topic</h3>
+    <form hx-post="/topics" hx-target="#topic-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="name">Topic Name</label>
+                <input type="text" id="name" name="name" placeholder="e.g., Space, History, Science" required class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <input type="text" id="description" name="description" placeholder="Brief description to guide AI" class="form-input">
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="facts_per_refresh">Facts/Refresh</label>
+                <input type="number" id="facts_per_refresh" name="facts_per_refresh" value="5" min="1" max="20" class="form-input">
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="refresh_interval">Interval (min)</label>
+                <input type="number" id="refresh_interval" name="refresh_interval_minutes" value="1440" min="1" class="form-input">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Topic</button>
+    </form>
+</div>
+
+<!-- Topic List -->
+<div class="card">
+    <h3 class="card-title">Your Topics</h3>
+    <div id="topic-list">
+        {{if .Topics}}
+            {{range .Topics}}
+                {{template "topic_row" .}}
+            {{end}}
+        {{else}}
+            <p class="text-muted" id="no-topics-msg">No topics yet. Add one above!</p>
+        {{end}}
+    </div>
+</div>
+
+<!-- Fact Search & Management -->
+<div class="card">
+    <h3 class="card-title">Search & Manage Facts</h3>
+    <div class="search-bar">
+        <input type="search" name="q" placeholder="Search facts..."
+               hx-get="/facts/search"
+               hx-trigger="input changed delay:300ms, search"
+               hx-target="#search-results"
+               hx-indicator="#search-spinner"
+               class="form-input">
+        <span id="search-spinner" class="htmx-indicator spinner"></span>
+    </div>
+    <div id="search-results"></div>
+
+    <!-- Add Custom Fact -->
+    <div class="custom-fact-form">
+        <h4>Add Custom Fact</h4>
+        <form hx-post="/facts" hx-target="#search-results" hx-swap="afterbegin" hx-on::after-request="if(event.detail.successful) this.reset()">
+            <div class="form-row">
+                <div class="form-group form-group-sm">
+                    <label>Topic</label>
+                    <select name="topic_id" required class="form-input">
+                        {{range .Topics}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fact</label>
+                    <textarea name="content" placeholder="Enter a custom fact..." required class="form-input form-textarea" rows="2"></textarea>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-secondary">Add Custom Fact</button>
+        </form>
+    </div>
+</div>
+{{end}}

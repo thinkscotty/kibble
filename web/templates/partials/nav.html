@@ -1,0 +1,13 @@
+{{define "nav"}}
+<nav class="navbar">
+    <div class="nav-brand">
+        <a href="/">Kibble</a>
+    </div>
+    <div class="nav-links">
+        <a href="/" class="nav-link {{if eq .Page "dashboard"}}active{{end}}">Dashboard</a>
+        <a href="/topics" class="nav-link {{if eq .Page "topics"}}active{{end}}">Topics</a>
+        <a href="/settings" class="nav-link {{if eq .Page "settings"}}active{{end}}">Settings</a>
+        <a href="/stats" class="nav-link {{if eq .Page "stats"}}active{{end}}">Statistics</a>
+    </div>
+</nav>
+{{end}}

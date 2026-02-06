@@ -1,0 +1,28 @@
+{{define "fact_item"}}
+<div class="fact-row" id="fact-{{.ID}}">
+    <div class="fact-content-wrap">
+        <p class="fact-content">{{.Content}}</p>
+        <div class="fact-meta">
+            {{if .TopicName}}<span class="badge badge-topic">{{.TopicName}}</span>{{end}}
+            <span class="badge {{if .IsCustom}}badge-custom{{else}}badge-ai{{end}}">
+                {{if .IsCustom}}Custom{{else}}AI{{end}}
+            </span>
+        </div>
+    </div>
+    <div class="fact-actions">
+        <button class="btn btn-sm btn-secondary"
+                hx-get="/facts/{{.ID}}/edit"
+                hx-target="#fact-{{.ID}}"
+                hx-swap="outerHTML">
+            Edit
+        </button>
+        <button class="btn btn-sm btn-danger"
+                hx-delete="/facts/{{.ID}}"
+                hx-target="#fact-{{.ID}}"
+                hx-swap="outerHTML"
+                hx-confirm="Delete this fact?">
+            Delete
+        </button>
+    </div>
+</div>
+{{end}}

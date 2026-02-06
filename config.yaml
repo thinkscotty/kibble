@@ -1,0 +1,16 @@
+# Kibble Configuration
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout_seconds: 30
+  write_timeout_seconds: 30
+
+database:
+  path: "./kibble.db"
+
+logging:
+  level: "info"  # debug, info, warn, error
+
+similarity:
+  threshold: 0.6  # 0.0 to 1.0 - Jaccard trigram similarity cutoff
+  ngram_size: 3

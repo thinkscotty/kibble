@@ -1,0 +1,17 @@
+{{define "fact_edit"}}
+<div class="fact-row fact-edit-row" id="fact-{{.ID}}">
+    <form hx-put="/facts/{{.ID}}" hx-target="#fact-{{.ID}}" hx-swap="outerHTML" class="fact-edit-form">
+        <textarea name="content" class="form-input form-textarea" rows="3" required>{{.Content}}</textarea>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+            <button type="button" class="btn btn-sm btn-secondary"
+                    hx-get="/facts/{{.ID}}/edit"
+                    hx-target="#fact-{{.ID}}"
+                    hx-swap="outerHTML"
+                    onclick="htmx.ajax('GET', '/facts/{{.ID}}/edit', {target: '#fact-{{.ID}}', swap: 'outerHTML'}); return false;">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+{{end}}

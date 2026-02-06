@@ -1,0 +1,31 @@
+{{define "topic_card"}}
+<div class="card topic-card" id="topic-card-{{.Topic.ID}}">
+    <div class="card-header">
+        <h3 class="card-title">{{.Topic.Name}}</h3>
+        <div class="card-actions">
+            <button class="btn btn-sm btn-secondary"
+                    hx-post="/topics/{{.Topic.ID}}/refresh"
+                    hx-target="#topic-card-{{.Topic.ID}}"
+                    hx-swap="outerHTML"
+                    hx-indicator="#refresh-spinner-{{.Topic.ID}}">
+                Refresh
+            </button>
+            <span id="refresh-spinner-{{.Topic.ID}}" class="htmx-indicator spinner"></span>
+        </div>
+    </div>
+    {{if .Topic.Description}}
+    <p class="card-description">{{.Topic.Description}}</p>
+    {{end}}
+    <div class="facts-list">
+        {{if .Facts}}
+            {{range .Facts}}
+            <div class="fact-item" id="fact-{{.ID}}">
+                <p class="fact-content">{{.Content}}</p>
+            </div>
+            {{end}}
+        {{else}}
+            <p class="text-muted">No facts yet. Click Refresh to generate some!</p>
+        {{end}}
+    </div>
+</div>
+{{end}}

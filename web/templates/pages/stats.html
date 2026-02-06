@@ -1,0 +1,89 @@
+{{define "title"}}Statistics{{end}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1>Statistics</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{.Stats.TotalTopics}}</div>
+        <div class="stat-label">Total Topics</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{.Stats.ActiveTopics}}</div>
+        <div class="stat-label">Active Topics</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{.Stats.TotalFacts}}</div>
+        <div class="stat-label">Total Facts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{.Stats.AIGeneratedFacts}}</div>
+        <div class="stat-label">AI-Generated</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{.Stats.CustomFacts}}</div>
+        <div class="stat-label">Custom Facts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{.Stats.FactsDiscarded}}</div>
+        <div class="stat-label">Discarded (Similar)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{.Stats.TotalAPIRequests}}</div>
+        <div class="stat-label">API Requests</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{.Stats.TotalTokensUsed}}</div>
+        <div class="stat-label">Tokens Used</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{formatBytes .Stats.DatabaseSizeBytes}}</div>
+        <div class="stat-label">Database Size</div>
+    </div>
+</div>
+
+<!-- Recent API Usage -->
+<div class="card">
+    <h3 class="card-title">Recent API Activity</h3>
+    {{if .RecentUsage}}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Requested</th>
+                    <th>Generated</th>
+                    <th>Discarded</th>
+                    <th>Tokens</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .RecentUsage}}
+                <tr>
+                    <td>{{.TopicName}}</td>
+                    <td>{{.FactsRequested}}</td>
+                    <td>{{.FactsGenerated}}</td>
+                    <td>{{.FactsDiscarded}}</td>
+                    <td>{{.TokensUsed}}</td>
+                    <td>
+                        {{if .ErrorMessage}}
+                            <span class="badge badge-error" title="{{.ErrorMessage}}">Error</span>
+                        {{else}}
+                            <span class="badge badge-active">OK</span>
+                        {{end}}
+                    </td>
+                    <td class="text-muted text-sm">{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <p class="text-muted">No API activity yet.</p>
+    {{end}}
+</div>
+{{end}}

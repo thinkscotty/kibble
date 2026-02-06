@@ -1,0 +1,11 @@
+{{define "fact_search_results"}}
+<div class="search-results">
+    {{if .}}
+        {{range .}}
+            {{template "fact_item" .}}
+        {{end}}
+    {{else}}
+        <p class="text-muted">No facts found matching your search.</p>
+    {{end}}
+</div>
+{{end}}

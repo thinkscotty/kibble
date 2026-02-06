@@ -1,0 +1,34 @@
+{{define "topic_edit_row"}}
+<div class="topic-row topic-edit-row" id="topic-row-{{.ID}}">
+    <form hx-put="/topics/{{.ID}}" hx-target="#topic-row-{{.ID}}" hx-swap="outerHTML" class="topic-edit-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" value="{{.Name}}" required class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" value="{{.Description}}" class="form-input">
+            </div>
+            <div class="form-group form-group-sm">
+                <label>Facts/Refresh</label>
+                <input type="number" name="facts_per_refresh" value="{{.FactsPerRefresh}}" min="1" max="20" class="form-input">
+            </div>
+            <div class="form-group form-group-sm">
+                <label>Interval (min)</label>
+                <input type="number" name="refresh_interval_minutes" value="{{.RefreshIntervalMinutes}}" min="1" class="form-input">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+            <button type="button" class="btn btn-sm btn-secondary"
+                    hx-get="/topics/{{.ID}}/edit"
+                    hx-target="#topic-row-{{.ID}}"
+                    hx-swap="outerHTML"
+                    onclick="htmx.ajax('GET', '/topics', {target: '#topic-list', swap: 'innerHTML'})">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+{{end}}

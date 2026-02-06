@@ -1,0 +1,42 @@
+{{define "topic_row"}}
+<div class="topic-row" id="topic-row-{{.ID}}">
+    <div class="topic-info">
+        <span class="topic-name">{{.Name}}</span>
+        <span class="topic-description text-muted">{{.Description}}</span>
+    </div>
+    <div class="topic-meta">
+        <span class="badge {{if .IsActive}}badge-active{{else}}badge-inactive{{end}}">
+            {{if .IsActive}}Active{{else}}Inactive{{end}}
+        </span>
+        <span class="text-muted text-sm">{{.FactsPerRefresh}} facts / {{.RefreshIntervalMinutes}}min</span>
+        <span class="text-muted text-sm">Last: {{timeAgo .LastRefreshedAt}}</span>
+    </div>
+    <div class="topic-actions">
+        <button class="btn btn-sm btn-primary"
+                hx-patch="/topics/{{.ID}}/toggle"
+                hx-target="#topic-row-{{.ID}}"
+                hx-swap="outerHTML"
+                hx-vals='{"active": "{{if .IsActive}}false{{else}}true{{end}}"}'>
+            {{if .IsActive}}Disable{{else}}Enable{{end}}
+        </button>
+        <button class="btn btn-sm btn-secondary"
+                hx-get="/topics/{{.ID}}/edit"
+                hx-target="#topic-row-{{.ID}}"
+                hx-swap="outerHTML">
+            Edit
+        </button>
+        <button class="btn btn-sm btn-secondary"
+                hx-post="/topics/{{.ID}}/refresh"
+                hx-swap="none">
+            Refresh
+        </button>
+        <button class="btn btn-sm btn-danger"
+                hx-delete="/topics/{{.ID}}"
+                hx-target="#topic-row-{{.ID}}"
+                hx-swap="outerHTML"
+                hx-confirm="Delete this topic and all its facts?">
+            Delete
+        </button>
+    </div>
+</div>
+{{end}}

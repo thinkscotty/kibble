@@ -1,0 +1,21 @@
+{{define "title"}}Dashboard{{end}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1>Dashboard</h1>
+</div>
+
+{{if .Topics}}
+<div class="dashboard-grid">
+    {{range .Topics}}
+        {{template "topic_card" .}}
+    {{end}}
+</div>
+{{else}}
+<div class="empty-state">
+    <h2>Welcome to Kibble!</h2>
+    <p>Get started by adding some topics on the <a href="/topics">Topics page</a>.</p>
+    <p>Then configure your Gemini API key in <a href="/settings">Settings</a> to start generating facts.</p>
+</div>
+{{end}}
+{{end}}

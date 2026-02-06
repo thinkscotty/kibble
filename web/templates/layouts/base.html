@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{index .Settings "theme_mode"}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kibble - {{block "title" .}}Dashboard{{end}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        :root {
+            --primary: {{index .Settings "primary_color"}};
+            --secondary: {{index .Settings "secondary_color"}};
+        }
+    </style>
+</head>
+<body>
+    {{template "nav" .}}
+
+    <main class="container">
+        {{block "content" .}}{{end}}
+    </main>
+
+    <div id="toast-container"></div>
+
+    <script src="/static/js/htmx.min.js"></script>
+    <script>
+        // Theme switching support
+        document.body.addEventListener("settings-saved", function() {
+            var toast = document.getElementById("toast-container");
+            toast.innerHTML = '<div class="toast toast-success">Settings saved successfully</div>';
+            setTimeout(function() { toast.innerHTML = ""; }, 3000);
+        });
+
+        // Handle theme changes by reloading page to pick up new CSS vars
+        document.body.addEventListener("htmx:afterRequest", function(e) {
+            if (e.detail.pathInfo && e.detail.pathInfo.requestPath === "/settings") {
+                if (e.detail.successful) {
+                    setTimeout(function() { window.location.reload(); }, 500);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
