@@ -44,7 +44,7 @@ a:hover {
 
 /* ==================== Navbar ==================== */
 .navbar {
-    background-color: color-mix(in srgb, var(--bg-navbar) 85%, transparent);
+    background-color: color-mix(in srgb, var(--bg-navbar) 75%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
@@ -120,12 +120,12 @@ a:hover {
     border-radius: var(--card-radius);
     padding: 1.5rem;
     margin-bottom: 1rem;
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.12);
     transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .card:hover {
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.16);
     transform: translateY(-1px) scale(1.01);
 }
 

@@ -4,7 +4,11 @@
 <div class="auth-container">
     <div class="auth-card card">
         <div class="auth-logo">
+            {{if eq .ThemeLogo "light"}}
+            <img src="/static/img/kibble_logo_white.svg" alt="Kibble" class="auth-logo-img">
+            {{else}}
             <img src="/static/img/kibble_logo_black.svg" alt="Kibble" class="auth-logo-img">
+            {{end}}
         </div>
         <h2 class="auth-title">Sign In</h2>
 

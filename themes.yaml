@@ -84,3 +84,43 @@ themes:
       primary: "#779FA1"
       accent: "#E86A92"
       text: "#161712" 
+      
+  - id: yale
+    name: Yale
+    scheme: light
+    logo: light
+    colors:
+      background: "#FFFFFF"
+      surface: "#F1F6F9"
+      navbar: "#284B63"
+      navbar_text: "#ffffff"
+      primary: "#CD5334"
+      accent: "#E39774"
+      text: "#0E0F19" 
+
+  - id: iron
+    name: Iron
+    scheme: dark
+    logo: light
+    colors:
+      background: "#343F3E"
+      surface: "#505A5B"
+      navbar: "#505A5B"
+      navbar_text: "#E7ECEF"
+      primary: "#F5853F"
+      accent: "#7FB069"
+      text: "#E7ECEF"
+      
+  - id: chestnuts
+    name: Soft Bud
+    scheme: light
+    logo: dark
+    colors:
+      background: "#F9F7F0"
+      surface: "#F9F4F1"
+      navbar: "#772E25"
+      navbar_text: "#F9F7F0"
+      primary: "#918868"
+      accent: "#1c3041"
+      text: "#121F2B" 
+
