@@ -1,0 +1,34 @@
+{{define "title"}}Login{{end}}
+
+{{define "content"}}
+<div class="auth-container">
+    <div class="auth-card card">
+        <div class="auth-logo">
+            <img src="/static/img/kibble_logo_black.svg" alt="Kibble" class="auth-logo-img">
+        </div>
+        <h2 class="auth-title">Sign In</h2>
+
+        {{if .Error}}
+        <div class="alert alert-error">{{.Error}}</div>
+        {{end}}
+
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username"
+                       class="form-input" autocomplete="username"
+                       autofocus required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password"
+                       class="form-input" autocomplete="current-password"
+                       required>
+            </div>
+            <div class="form-actions-footer">
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">Sign In</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}

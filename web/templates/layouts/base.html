@@ -11,7 +11,9 @@
     <style>:root { {{.ThemeCSS}} }</style>
 </head>
 <body>
+    {{if and (ne .Page "login") (ne .Page "setup")}}
     {{template "nav" .}}
+    {{end}}
 
     <main class="container">
         {{block "content" .}}{{end}}

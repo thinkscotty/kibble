@@ -14,6 +14,9 @@
         <a href="/topics" class="nav-link {{if eq .Page "topics"}}active{{end}}">Topics</a>
         <a href="/settings" class="nav-link {{if eq .Page "settings"}}active{{end}}">Settings</a>
         <a href="/stats" class="nav-link {{if eq .Page "stats"}}active{{end}}">Statistics</a>
+        <form method="POST" action="/logout" style="display: inline;">
+            <button type="submit" class="nav-link" style="background: none; border: none; cursor: pointer; font: inherit;">Logout</button>
+        </form>
     </div>
 </nav>
 {{end}}

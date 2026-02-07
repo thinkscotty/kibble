@@ -716,3 +716,45 @@ a:hover {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ==================== Auth Pages (Login / Setup) ==================== */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+}
+
+.auth-logo {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.auth-logo-img {
+    height: 80px;
+    width: auto;
+}
+
+.auth-title {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin-bottom: 1.5rem;
+}
+
+.alert-error {
+    background-color: rgba(220, 38, 38, 0.15);
+    color: #dc2626;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    padding: 0.75rem 1rem;
+    border-radius: var(--input-radius);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}

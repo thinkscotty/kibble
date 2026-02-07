@@ -8,6 +8,28 @@
 
 <form hx-post="/settings" hx-target="body" hx-swap="outerHTML" hx-push-url="false">
 
+    <!-- External API Key -->
+    <div class="card">
+        <h3 class="card-title">External API Key</h3>
+        <p class="text-muted text-sm">Required by external client devices to access the <code>/api/v1/</code> endpoints.
+           Pass as <code>Authorization: Bearer &lt;key&gt;</code> header or <code>?api_key=&lt;key&gt;</code> query parameter.</p>
+        <div class="form-row" style="align-items: center;">
+            <div class="form-group">
+                <label>API Key</label>
+                <code id="api-key-value" style="word-break: break-all;">{{index .Settings "api_key"}}</code>
+            </div>
+            <div class="form-group form-group-sm" style="align-self: flex-end;">
+                <button type="button" class="btn btn-secondary"
+                        hx-post="/settings/apikey/regenerate"
+                        hx-target="#api-key-value"
+                        hx-swap="outerHTML"
+                        hx-confirm="Regenerate API key? External clients will need the new key.">
+                    Regenerate
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- API Key Section -->
     <div class="card">
         <h3 class="card-title">Gemini API Key</h3>

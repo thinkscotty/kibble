@@ -1,7 +1,9 @@
 package database
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"time"
@@ -93,6 +95,21 @@ func (db *DB) migrate() error {
 			error_message   TEXT,
 			created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 		)`,
+		`CREATE TABLE IF NOT EXISTS users (
+			id            INTEGER PRIMARY KEY AUTOINCREMENT,
+			username      TEXT    NOT NULL UNIQUE,
+			password_hash TEXT    NOT NULL,
+			created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE TABLE IF NOT EXISTS sessions (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			token      TEXT    NOT NULL UNIQUE,
+			user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			expires_at TEXT    NOT NULL,
+			created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`,
+		`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`,
 	}
 
 	for _, stmt := range statements {
@@ -127,5 +144,20 @@ func (db *DB) seedSettings() error {
 			return err
 		}
 	}
+
+	// Seed a random API key if one doesn't already exist.
+	var apiKeyExists int
+	db.conn.QueryRow(`SELECT COUNT(*) FROM settings WHERE key = 'api_key'`).Scan(&apiKeyExists)
+	if apiKeyExists == 0 {
+		b := make([]byte, 32)
+		if _, err := rand.Read(b); err != nil {
+			return fmt.Errorf("generate api key: %w", err)
+		}
+		apiKey := base64.RawURLEncoding.EncodeToString(b)
+		if _, err := db.conn.Exec(`INSERT OR IGNORE INTO settings (key, value) VALUES ('api_key', ?)`, apiKey); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

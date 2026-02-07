@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	kibble "github.com/thinkscotty/kibble"
@@ -24,6 +25,7 @@ type Server struct {
 	sim      *similarity.Checker
 	sched    *scheduler.Scheduler
 	themes   []config.Theme
+	hasUsers atomic.Bool
 	pages    map[string]*template.Template
 	partials *template.Template
 	httpSrv  *http.Server
@@ -38,6 +40,9 @@ func New(cfg config.Config, db *database.DB, geminiClient *gemini.Client, sim *s
 		sched:  sched,
 		themes: themes,
 	}
+	if count, _ := db.UserCount(); count > 0 {
+		s.hasUsers.Store(true)
+	}
 	return s
 }
 
@@ -50,7 +55,7 @@ func (s *Server) Start() error {
 	mux := http.NewServeMux()
 	s.routes(mux)
 
-	handler := recoveryMiddleware(loggingMiddleware(mux))
+	handler := recoveryMiddleware(loggingMiddleware(s.setupGuard(mux)))
 
 	addr := fmt.Sprintf("%s:%d", s.cfg.Server.Host, s.cfg.Server.Port)
 	s.httpSrv = &http.Server{
@@ -69,40 +74,45 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 func (s *Server) routes(mux *http.ServeMux) {
-	// Static assets from embedded filesystem
+	// Static assets — always public
 	staticFS, _ := fs.Sub(kibble.StaticFS, "web/static")
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(staticFS)))
 
-	// Pages (full HTML)
-	mux.HandleFunc("GET /{$}", s.handleDashboard)
-	mux.HandleFunc("GET /topics", s.handleTopicsPage)
-	mux.HandleFunc("GET /settings", s.handleSettingsPage)
-	mux.HandleFunc("GET /stats", s.handleStatsPage)
+	// Auth routes — public
+	mux.HandleFunc("GET /login", s.handleLoginPage)
+	mux.HandleFunc("POST /login", s.handleLoginSubmit)
+	mux.HandleFunc("POST /logout", s.handleLogout)
+	mux.HandleFunc("GET /setup", s.handleSetupPage)
+	mux.HandleFunc("POST /setup", s.handleSetupSubmit)
 
-	// Topics HTMX endpoints (return partials)
-	mux.HandleFunc("POST /topics", s.handleTopicCreate)
-	mux.HandleFunc("GET /topics/{id}/edit", s.handleTopicEditForm)
-	mux.HandleFunc("PUT /topics/{id}", s.handleTopicUpdate)
-	mux.HandleFunc("DELETE /topics/{id}", s.handleTopicDelete)
-	mux.HandleFunc("PATCH /topics/{id}/toggle", s.handleTopicToggle)
-	mux.HandleFunc("POST /topics/reorder", s.handleTopicReorder)
-	mux.HandleFunc("POST /topics/{id}/refresh", s.handleTopicRefresh)
+	// External Client API — protected by API key
+	mux.Handle("GET /api/v1/topics", s.requireAPIKey(http.HandlerFunc(s.handleAPITopics)))
+	mux.Handle("GET /api/v1/facts", s.requireAPIKey(http.HandlerFunc(s.handleAPIFacts)))
+	mux.Handle("GET /api/v1/facts/random", s.requireAPIKey(http.HandlerFunc(s.handleAPIRandomFact)))
 
-	// Facts HTMX endpoints (return partials)
-	mux.HandleFunc("POST /facts", s.handleFactCreate)
-	mux.HandleFunc("GET /facts/{id}/edit", s.handleFactEditForm)
-	mux.HandleFunc("PUT /facts/{id}", s.handleFactUpdate)
-	mux.HandleFunc("DELETE /facts/{id}", s.handleFactDelete)
-	mux.HandleFunc("GET /facts/search", s.handleFactSearch)
+	// All other routes — protected by session auth
+	mux.Handle("GET /{$}", s.requireAuth(http.HandlerFunc(s.handleDashboard)))
+	mux.Handle("GET /topics", s.requireAuth(http.HandlerFunc(s.handleTopicsPage)))
+	mux.Handle("GET /settings", s.requireAuth(http.HandlerFunc(s.handleSettingsPage)))
+	mux.Handle("GET /stats", s.requireAuth(http.HandlerFunc(s.handleStatsPage)))
 
-	// Settings HTMX endpoints
-	mux.HandleFunc("POST /settings", s.handleSettingsUpdate)
-	mux.HandleFunc("POST /settings/apikey/test", s.handleAPIKeyTest)
+	mux.Handle("POST /topics", s.requireAuth(http.HandlerFunc(s.handleTopicCreate)))
+	mux.Handle("GET /topics/{id}/edit", s.requireAuth(http.HandlerFunc(s.handleTopicEditForm)))
+	mux.Handle("PUT /topics/{id}", s.requireAuth(http.HandlerFunc(s.handleTopicUpdate)))
+	mux.Handle("DELETE /topics/{id}", s.requireAuth(http.HandlerFunc(s.handleTopicDelete)))
+	mux.Handle("PATCH /topics/{id}/toggle", s.requireAuth(http.HandlerFunc(s.handleTopicToggle)))
+	mux.Handle("POST /topics/reorder", s.requireAuth(http.HandlerFunc(s.handleTopicReorder)))
+	mux.Handle("POST /topics/{id}/refresh", s.requireAuth(http.HandlerFunc(s.handleTopicRefresh)))
 
-	// External Client API (JSON)
-	mux.HandleFunc("GET /api/v1/topics", s.handleAPITopics)
-	mux.HandleFunc("GET /api/v1/facts", s.handleAPIFacts)
-	mux.HandleFunc("GET /api/v1/facts/random", s.handleAPIRandomFact)
+	mux.Handle("POST /facts", s.requireAuth(http.HandlerFunc(s.handleFactCreate)))
+	mux.Handle("GET /facts/{id}/edit", s.requireAuth(http.HandlerFunc(s.handleFactEditForm)))
+	mux.Handle("PUT /facts/{id}", s.requireAuth(http.HandlerFunc(s.handleFactUpdate)))
+	mux.Handle("DELETE /facts/{id}", s.requireAuth(http.HandlerFunc(s.handleFactDelete)))
+	mux.Handle("GET /facts/search", s.requireAuth(http.HandlerFunc(s.handleFactSearch)))
+
+	mux.Handle("POST /settings", s.requireAuth(http.HandlerFunc(s.handleSettingsUpdate)))
+	mux.Handle("POST /settings/apikey/test", s.requireAuth(http.HandlerFunc(s.handleAPIKeyTest)))
+	mux.Handle("POST /settings/apikey/regenerate", s.requireAuth(http.HandlerFunc(s.handleAPIKeyRegenerate)))
 }
 
 func (s *Server) loadTemplates() error {
@@ -155,7 +165,7 @@ func (s *Server) loadTemplates() error {
 
 	s.pages = make(map[string]*template.Template)
 
-	pageNames := []string{"dashboard", "topics", "settings", "stats"}
+	pageNames := []string{"dashboard", "topics", "settings", "stats", "login", "setup"}
 	for _, page := range pageNames {
 		t, err := template.New("base.html").Funcs(funcMap).ParseFS(kibble.TemplateFS,
 			"web/templates/layouts/base.html",

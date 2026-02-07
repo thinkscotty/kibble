@@ -45,6 +45,13 @@ func (s *Scheduler) Run(ctx context.Context) {
 }
 
 func (s *Scheduler) checkAndRefresh(ctx context.Context) {
+	// Clean up expired sessions on each tick
+	if n, err := s.db.DeleteExpiredSessions(); err != nil {
+		slog.Error("Failed to delete expired sessions", "error", err)
+	} else if n > 0 {
+		slog.Debug("Cleaned up expired sessions", "count", n)
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

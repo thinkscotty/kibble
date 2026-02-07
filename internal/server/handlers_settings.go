@@ -1,6 +1,10 @@
 package server
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 )
@@ -76,4 +80,25 @@ func (s *Server) handleAPIKeyTest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(`<span class="text-success">API key is valid!</span>`))
+}
+
+func (s *Server) handleAPIKeyRegenerate(w http.ResponseWriter, r *http.Request) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		slog.Error("Failed to generate API key", "error", err)
+		http.Error(w, "Failed to generate key", 500)
+		return
+	}
+	newKey := base64.RawURLEncoding.EncodeToString(b)
+
+	if err := s.db.SetSetting("api_key", newKey); err != nil {
+		slog.Error("Failed to save API key", "error", err)
+		http.Error(w, "Failed to save key", 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, `<code id="api-key-value" style="word-break: break-all;">%s</code>
+		<span class="text-success text-sm" style="margin-left: 0.5rem;">Key regenerated!</span>`,
+		template.HTMLEscapeString(newKey))
 }
