@@ -39,12 +39,13 @@ themes:
     scheme: light
     logo: light
     colors:
-      background: "#d1d8da"
-      surface: "#d3d9d9"
-      navbar: "#2D323B"
-      primary: "#3c6c60"
-      accent: "#668d7d"
-      text: "#2D323B"
+      background: "#FEFEFF"
+      surface: "#FFFFFF"
+      navbar: "#292F36"
+      navbar_text: "#FEFEFF"
+      primary: "#4DA167"
+      accent: "#de6449"
+      text: "#292F36"
 
   - id: soft-dark
     name: Soft Dark
@@ -70,3 +71,16 @@ themes:
       primary: "#a6c8e8"
       accent: "#a4d6ee"
       text: "#222b35"
+      
+  - id: soft-bud
+    name: Soft Bud
+    scheme: light
+    logo: dark
+    colors:
+      background: "#E2E8DD"
+      surface: "#B7D1DA"
+      navbar: "#B7D1DA"
+      navbar_text: "#161712"
+      primary: "#779FA1"
+      accent: "#E86A92"
+      text: "#161712" 
