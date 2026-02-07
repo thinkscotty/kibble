@@ -44,14 +44,16 @@ a:hover {
 
 /* ==================== Navbar ==================== */
 .navbar {
-    background-color: var(--bg-navbar);
-    border-bottom: 1px solid var(--border);
+    background-color: color-mix(in srgb, var(--bg-navbar) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
     box-shadow: var(--shadow-nav);
     padding: 0 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 140px;
+    height: 110px;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -69,7 +71,7 @@ a:hover {
 }
 
 .nav-logo {
-    height: 126px;
+    height: 96px;
     width: auto;
 }
 

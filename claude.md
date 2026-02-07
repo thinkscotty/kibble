@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Kibble is an AI-powered facts generator web application. Users define topics, and the app calls the Gemini Flash 2.5 API to generate interesting facts, which are cached in SQLite and displayed via a web UI. Facts are also served to external client devices (LED matrices, smart displays) via a JSON API.
 
-Target hardware: Raspberry Pi 3B+ with <1GB RAM.
+Target hardware: Cloud VPS (Rocky Linux 10, ARM64 Ampere, 4 cores, 8GB RAM). Previously Raspberry Pi 3B+.
 
 ## Build & Run Commands
 

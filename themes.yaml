@@ -47,7 +47,7 @@ themes:
   - id: soft-dark
     name: Soft Dark
     scheme: dark
-    logo: dark
+    logo: light
     colors:
       background: "#222b35"
       surface: "#222b35"
