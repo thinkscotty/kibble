@@ -110,8 +110,6 @@ func (db *DB) seedSettings() error {
 		"ai_custom_instructions":  "",
 		"ai_tone_instructions":    "",
 		"theme_mode":              "dark",
-		"primary_color":           "#FF6B6B",
-		"secondary_color":         "#48DBFB",
 		"text_size":               "medium",
 		"card_columns":            "3",
 		"facts_per_topic_display": "5",

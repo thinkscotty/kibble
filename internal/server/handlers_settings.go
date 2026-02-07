@@ -31,8 +31,6 @@ func (s *Server) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		"ai_custom_instructions",
 		"ai_tone_instructions",
 		"theme_mode",
-		"primary_color",
-		"secondary_color",
 		"text_size",
 		"card_columns",
 		"facts_per_topic_display",

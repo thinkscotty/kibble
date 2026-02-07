@@ -1,6 +1,5 @@
 /* Kibble - Stylesheet
    CSS custom properties for theming with dark/light mode support.
-   --primary and --secondary are injected from user settings via base.html.
 */
 
 /* ==================== Reset & Base ==================== */
@@ -23,20 +22,22 @@ html[data-text-size="large"] { font-size: 18px; }
 /* ==================== Theme: Dark (default) ==================== */
 :root,
 [data-theme="dark"] {
-    --bg: #222F3E;
-    --bg-surface: #34495E;
-    --bg-surface-hover: #3d5570;
-    --bg-input: #2c3e50;
-    --border: #4a6380;
+    --bg: #052a28;
+    --bg-surface: #212634;
+    --bg-surface-hover: #23384b;
+    --bg-input: #1a2230;
+    --border: #345060;
     --border-focus: var(--primary);
-    --text: #C8D6E5;
-    --text-muted: #8fa4b8;
-    --text-heading: #f0f4f8;
-    --shadow: 0 2px 4px rgba(0, 0, 0, 0.2),
-              0 8px 24px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.25),
-                 0 16px 40px rgba(0, 0, 0, 0.3);
-    --shadow-nav: 0 2px 12px rgba(0, 0, 0, 0.3);
+    --text: #e2eeef;
+    --text-muted: #8a9ea0;
+    --text-heading: #f2f7f7;
+    --shadow: 0 2px 4px rgba(5, 42, 40, 0.3),
+              0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 4px 8px rgba(5, 42, 40, 0.35),
+                 0 16px 40px rgba(0, 0, 0, 0.35);
+    --shadow-nav: 0 2px 12px rgba(0, 0, 0, 0.35);
+    --primary: #41837b;
+    --secondary: #008bdb;
     --card-radius: 12px;
     --btn-radius: 8px;
     --input-radius: 8px;
@@ -45,20 +46,22 @@ html[data-text-size="large"] { font-size: 18px; }
 
 /* ==================== Theme: Light ==================== */
 [data-theme="light"] {
-    --bg: #FDFDFD;
-    --bg-surface: #F0F4F8;
-    --bg-surface-hover: #e2e8f0;
-    --bg-input: #ffffff;
-    --border: #cbd5e1;
+    --bg: #e2eeef;
+    --bg-surface: #d9e1d5;
+    --bg-surface-hover: #c8d3c2;
+    --bg-input: #edf3ee;
+    --border: #aacfb1;
     --border-focus: var(--primary);
-    --text: #222F3E;
-    --text-muted: #5a6a7e;
-    --text-heading: #1a2536;
-    --shadow: 0 1px 3px rgba(34, 47, 62, 0.08),
-              0 6px 20px rgba(34, 47, 62, 0.1);
-    --shadow-lg: 0 4px 8px rgba(34, 47, 62, 0.1),
-                 0 12px 32px rgba(34, 47, 62, 0.14);
-    --shadow-nav: 0 2px 12px rgba(34, 47, 62, 0.08);
+    --text: #212634;
+    --text-muted: #879978;
+    --text-heading: #0f1a20;
+    --shadow: 0 1px 3px rgba(5, 42, 40, 0.1),
+              0 6px 20px rgba(5, 42, 40, 0.12);
+    --shadow-lg: 0 4px 8px rgba(5, 42, 40, 0.12),
+                 0 12px 32px rgba(5, 42, 40, 0.16);
+    --shadow-nav: 0 2px 12px rgba(5, 42, 40, 0.1);
+    --primary: #008bdb;
+    --secondary: #41837b;
     color-scheme: light;
 }
 
@@ -93,24 +96,44 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 56px;
+    height: 80px;
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
 .nav-brand a {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
     text-decoration: none;
-    letter-spacing: -0.02em;
-    display: inline-block;
     transition: transform 0.15s;
 }
 
 .nav-brand a:hover {
     transform: scale(1.05);
+}
+
+.nav-logo {
+    height: 72px;
+    width: auto;
+}
+
+/* Dark mode (default): show white logo, hide black */
+:root .logo-dark,
+[data-theme="dark"] .logo-dark {
+    display: inline-block;
+}
+:root .logo-light,
+[data-theme="dark"] .logo-light {
+    display: none;
+}
+
+/* Light mode: show black logo, hide white */
+[data-theme="light"] .logo-dark {
+    display: none;
+}
+[data-theme="light"] .logo-light {
+    display: inline-block;
 }
 
 .nav-links {
@@ -447,7 +470,7 @@ a:hover {
 .form-input:focus {
     outline: none;
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+    box-shadow: 0 0 0 3px rgba(65, 131, 123, 0.25);
 }
 
 .form-textarea {

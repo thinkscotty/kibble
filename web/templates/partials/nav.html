@@ -1,7 +1,10 @@
 {{define "nav"}}
 <nav class="navbar">
     <div class="nav-brand">
-        <a href="/">Kibble</a>
+        <a href="/">
+            <img src="/static/img/kibble_logo_white.svg" alt="Kibble" class="nav-logo logo-dark">
+            <img src="/static/img/kibble_logo_black.svg" alt="Kibble" class="nav-logo logo-light">
+        </a>
     </div>
     <div class="nav-links">
         <a href="/" class="nav-link {{if eq .Page "dashboard"}}active{{end}}">Dashboard</a>
