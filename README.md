@@ -135,7 +135,6 @@ All of these have sensible defaults, so the config file is entirely optional.
 
 On the **Settings** page you can:
 - Switch between **dark mode** and **light mode**
-- Change the primary and secondary accent colors
 - Adjust text size (small, medium, large)
 - Set the number of card columns on the dashboard
 - Set how many facts to display per topic
