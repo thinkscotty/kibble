@@ -18,35 +18,42 @@ type Theme struct {
 	Colors ThemeColors `yaml:"colors"`
 }
 
-// ThemeColors holds the 6 core colors that define a theme.
+// ThemeColors holds the core colors that define a theme.
 type ThemeColors struct {
-	Background string `yaml:"background"` // page background
-	Surface    string `yaml:"surface"`    // card/panel backgrounds
-	Navbar     string `yaml:"navbar"`     // navigation bar background
-	Primary    string `yaml:"primary"`    // buttons, links, active accents
-	Accent     string `yaml:"accent"`     // highlights, secondary accents
-	Text       string `yaml:"text"`       // main body text
+	Background string `yaml:"background"`            // page background
+	Surface    string `yaml:"surface"`               // card/panel backgrounds
+	Navbar     string `yaml:"navbar"`                // navigation bar background
+	NavbarText string `yaml:"navbar_text,omitempty"` // navbar text (optional - auto-calculated if empty)
+	Primary    string `yaml:"primary"`               // buttons, links, active accents
+	Accent     string `yaml:"accent"`                // highlights, secondary accents
+	Text       string `yaml:"text"`                  // main body text
 }
 
 type themesFile struct {
 	Themes []Theme `yaml:"themes"`
 }
 
-// LoadThemes reads themes from a YAML file. Falls back to defaults if file missing.
-func LoadThemes(path string) ([]Theme, error) {
+// LoadThemes reads themes from a YAML file on disk. If the file doesn't exist,
+// it falls back to the embedded YAML data, then to hardcoded defaults.
+func LoadThemes(path string, embedded []byte) ([]Theme, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return DefaultThemes(), nil
+			return parseThemesYAML(embedded)
 		}
 		return nil, fmt.Errorf("read themes file: %w", err)
 	}
+	return parseThemesYAML(data)
+}
 
+func parseThemesYAML(data []byte) ([]Theme, error) {
+	if len(data) == 0 {
+		return DefaultThemes(), nil
+	}
 	var f themesFile
 	if err := yaml.Unmarshal(data, &f); err != nil {
-		return nil, fmt.Errorf("parse themes file: %w", err)
+		return nil, fmt.Errorf("parse themes: %w", err)
 	}
-
 	if len(f.Themes) == 0 {
 		return DefaultThemes(), nil
 	}
@@ -71,7 +78,7 @@ func DefaultThemes() []Theme {
 			},
 		},
 		{
-			ID: "soft-dark", Name: "Soft Dark", Scheme: "dark", Logo: "dark",
+			ID: "soft-dark", Name: "Soft Dark", Scheme: "dark", Logo: "light",
 			Colors: ThemeColors{
 				Background: "#222b35", Surface: "#222b35", Navbar: "#222b35",
 				Primary: "#447163", Accent: "#567E75", Text: "#e9efea",
@@ -137,10 +144,13 @@ func ResolveThemeCSS(t Theme) string {
 	writeProp("text-muted", hexString(textMuted))
 	writeProp("text-heading", hexString(textHeading))
 
-	// Navbar text color: pick white or black based on navbar luminance
-	navbarTextColor := "#ffffff"
-	if luminance(navbar) > 0.5 {
-		navbarTextColor = "#2D323B"
+	// Navbar text color: use explicit value if provided, otherwise auto-calculate
+	navbarTextColor := c.NavbarText
+	if navbarTextColor == "" {
+		navbarTextColor = "#ffffff"
+		if luminance(navbar) > 0.5 {
+			navbarTextColor = "#2D323B"
+		}
 	}
 	writeProp("navbar-text", navbarTextColor)
 

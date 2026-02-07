@@ -12,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 
+	kibble "github.com/thinkscotty/kibble"
 	"github.com/thinkscotty/kibble/internal/config"
 	"github.com/thinkscotty/kibble/internal/database"
 	"github.com/thinkscotty/kibble/internal/gemini"
@@ -70,7 +71,7 @@ func main() {
 	slog.Info("Database initialized", "path", cfg.Database.Path)
 
 	// Load color themes
-	themes, err := config.LoadThemes(*themesPath)
+	themes, err := config.LoadThemes(*themesPath, kibble.ThemesYAML)
 	if err != nil {
 		slog.Error("Failed to load themes", "error", err)
 		os.Exit(1)

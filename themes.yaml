@@ -12,28 +12,30 @@
 #   scheme      Browser color-scheme: "dark" or "light".
 #   logo        Which logo to display: "light" (white logo) or "dark" (black logo).
 #   colors:
-#     background  Page background color.
-#     surface     Card and panel background color.
-#     navbar      Navigation bar background color.
-#     primary     Buttons, links, and active accent color.
-#     accent      Highlights and secondary accent color.
-#     text        Main body text color.
+#     background   Page background color.
+#     surface      Card and panel background color.
+#     navbar       Navigation bar background color.
+#     navbar_text  Navigation bar text/link color (optional - auto-calculated if not set).
+#     primary      Buttons, links, and active accent color.
+#     accent       Highlights and secondary accent color.
+#     text         Main body text color.
 
 themes:
-  - id: pastel-earth
-    name: Pastel Earth
-    scheme: light
+  - id: classic-dark
+    name: Classic Dark
+    scheme: dark
     logo: light
     colors:
-      background: "#E0DDCE"
-      surface: "#CDE4E1"
-      navbar: "#57664A"
-      primary: "#AACF9F"
-      accent: "#BCE6DC"
-      text: "#2D323B"
+      background: "#292929"
+      surface: "#333333"
+      navbar: "#333333"
+      navbar_text: "#ffffff"
+      primary: "#779FA1"
+      accent: "#e94f37"
+      text: "#ffffff" 
 
-  - id: light-and-fresh
-    name: Light and Fresh
+  - id: Simple
+    name: Simple
     scheme: light
     logo: light
     colors:
@@ -64,6 +66,7 @@ themes:
       background: "#eeebf0"
       surface: "#e2e7f0"
       navbar: "#6F94C0"
+      navbar_text: "#eeebf0"
       primary: "#a6c8e8"
       accent: "#a4d6ee"
       text: "#222b35"
