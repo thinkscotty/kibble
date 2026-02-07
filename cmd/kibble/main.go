@@ -27,6 +27,7 @@ var (
 
 func main() {
 	configPath := flag.String("config", "config.yaml", "Path to configuration file")
+	themesPath := flag.String("themes", "themes.yaml", "Path to themes file")
 	showVersion := flag.Bool("version", false, "Show version and exit")
 	flag.Parse()
 
@@ -68,13 +69,21 @@ func main() {
 
 	slog.Info("Database initialized", "path", cfg.Database.Path)
 
+	// Load color themes
+	themes, err := config.LoadThemes(*themesPath)
+	if err != nil {
+		slog.Error("Failed to load themes", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Loaded themes", "count", len(themes))
+
 	// Initialize services
 	geminiClient := gemini.NewClient(db)
 	sim := similarity.New(cfg.Similarity.Threshold, cfg.Similarity.NGramSize)
 	sched := scheduler.New(db, geminiClient, sim)
 
 	// Build HTTP server
-	srv := server.New(cfg, db, geminiClient, sim, sched)
+	srv := server.New(cfg, db, geminiClient, sim, sched, themes)
 
 	// Start scheduler in background
 	ctx, cancel := context.WithCancel(context.Background())

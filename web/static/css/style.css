@@ -1,5 +1,6 @@
 /* Kibble - Stylesheet
-   CSS custom properties for theming with dark/light mode support.
+   Theme colors are injected as CSS custom properties via base.html from themes.yaml.
+   This stylesheet references those variables throughout.
 */
 
 /* ==================== Reset & Base ==================== */
@@ -18,52 +19,6 @@ html {
 html[data-text-size="small"] { font-size: 14px; }
 html[data-text-size="medium"] { font-size: 16px; }
 html[data-text-size="large"] { font-size: 18px; }
-
-/* ==================== Theme: Dark (default) ==================== */
-:root,
-[data-theme="dark"] {
-    --bg: #052a28;
-    --bg-surface: #212634;
-    --bg-surface-hover: #23384b;
-    --bg-input: #1a2230;
-    --border: #345060;
-    --border-focus: var(--primary);
-    --text: #e2eeef;
-    --text-muted: #8a9ea0;
-    --text-heading: #f2f7f7;
-    --shadow: 0 2px 4px rgba(5, 42, 40, 0.3),
-              0 8px 24px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 4px 8px rgba(5, 42, 40, 0.35),
-                 0 16px 40px rgba(0, 0, 0, 0.35);
-    --shadow-nav: 0 2px 12px rgba(0, 0, 0, 0.35);
-    --primary: #41837b;
-    --secondary: #008bdb;
-    --card-radius: 12px;
-    --btn-radius: 8px;
-    --input-radius: 8px;
-    color-scheme: dark;
-}
-
-/* ==================== Theme: Light ==================== */
-[data-theme="light"] {
-    --bg: #e2eeef;
-    --bg-surface: #d9e1d5;
-    --bg-surface-hover: #c8d3c2;
-    --bg-input: #edf3ee;
-    --border: #aacfb1;
-    --border-focus: var(--primary);
-    --text: #212634;
-    --text-muted: #879978;
-    --text-heading: #0f1a20;
-    --shadow: 0 1px 3px rgba(5, 42, 40, 0.1),
-              0 6px 20px rgba(5, 42, 40, 0.12);
-    --shadow-lg: 0 4px 8px rgba(5, 42, 40, 0.12),
-                 0 12px 32px rgba(5, 42, 40, 0.16);
-    --shadow-nav: 0 2px 12px rgba(5, 42, 40, 0.1);
-    --primary: #008bdb;
-    --secondary: #41837b;
-    color-scheme: light;
-}
 
 body {
     background-color: var(--bg);
@@ -89,14 +44,14 @@ a:hover {
 
 /* ==================== Navbar ==================== */
 .navbar {
-    background-color: var(--bg-surface);
+    background-color: var(--bg-navbar);
     border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow-nav);
     padding: 0 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 80px;
+    height: 140px;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -114,26 +69,8 @@ a:hover {
 }
 
 .nav-logo {
-    height: 72px;
+    height: 126px;
     width: auto;
-}
-
-/* Dark mode (default): show white logo, hide black */
-:root .logo-dark,
-[data-theme="dark"] .logo-dark {
-    display: inline-block;
-}
-:root .logo-light,
-[data-theme="dark"] .logo-light {
-    display: none;
-}
-
-/* Light mode: show black logo, hide white */
-[data-theme="light"] .logo-dark {
-    display: none;
-}
-[data-theme="light"] .logo-light {
-    display: inline-block;
 }
 
 .nav-links {
@@ -144,7 +81,7 @@ a:hover {
 .nav-link {
     padding: 0.5rem 1rem;
     border-radius: var(--btn-radius);
-    color: var(--text-muted);
+    color: var(--navbar-text, var(--text-muted));
     font-size: 0.9rem;
     font-weight: 500;
     text-decoration: none;
@@ -152,15 +89,15 @@ a:hover {
 }
 
 .nav-link:hover {
-    background-color: var(--bg-surface-hover);
-    color: var(--text);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--navbar-text, var(--text));
     text-decoration: none;
     transform: scale(1.05);
 }
 
 .nav-link.active {
-    background-color: var(--bg-surface-hover);
-    color: var(--primary);
+    background-color: rgba(255, 255, 255, 0.15);
+    color: var(--navbar-text, var(--primary));
 }
 
 /* ==================== Page Header ==================== */
@@ -470,18 +407,12 @@ a:hover {
 .form-input:focus {
     outline: none;
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px rgba(65, 131, 123, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
 .form-textarea {
     resize: vertical;
     min-height: 60px;
-}
-
-.form-color {
-    height: 40px;
-    padding: 0.25rem;
-    cursor: pointer;
 }
 
 .form-actions {

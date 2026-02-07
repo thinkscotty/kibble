@@ -23,18 +23,20 @@ type Server struct {
 	gemini   *gemini.Client
 	sim      *similarity.Checker
 	sched    *scheduler.Scheduler
+	themes   []config.Theme
 	pages    map[string]*template.Template
 	partials *template.Template
 	httpSrv  *http.Server
 }
 
-func New(cfg config.Config, db *database.DB, geminiClient *gemini.Client, sim *similarity.Checker, sched *scheduler.Scheduler) *Server {
+func New(cfg config.Config, db *database.DB, geminiClient *gemini.Client, sim *similarity.Checker, sched *scheduler.Scheduler, themes []config.Theme) *Server {
 	s := &Server{
 		cfg:    cfg,
 		db:     db,
 		gemini: geminiClient,
 		sim:    sim,
 		sched:  sched,
+		themes: themes,
 	}
 	return s
 }
@@ -188,10 +190,42 @@ func (s *Server) render(w http.ResponseWriter, page string, data map[string]any)
 		data["Settings"] = settings
 	}
 
+	// Resolve the active theme and inject CSS variables + logo choice
+	s.injectThemeData(data)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tmpl.ExecuteTemplate(w, "base.html", data); err != nil {
 		slog.Error("Template execution error", "page", page, "error", err)
 	}
+}
+
+// injectThemeData resolves the selected theme and adds ThemeCSS and ThemeLogo to the data map.
+func (s *Server) injectThemeData(data map[string]any) {
+	settings, _ := data["Settings"].(map[string]string)
+	themeID := ""
+	if settings != nil {
+		themeID = settings["theme_mode"]
+	}
+
+	theme := s.findTheme(themeID)
+	data["ThemeCSS"] = template.CSS(config.ResolveThemeCSS(theme))
+	data["ThemeLogo"] = theme.Logo
+	data["Themes"] = s.themes
+	data["CurrentTheme"] = theme.ID
+}
+
+// findTheme looks up a theme by ID, falling back to the first available theme.
+func (s *Server) findTheme(id string) config.Theme {
+	for _, t := range s.themes {
+		if t.ID == id {
+			return t
+		}
+	}
+	if len(s.themes) > 0 {
+		return s.themes[0]
+	}
+	// Absolute fallback if no themes configured at all
+	return config.DefaultThemes()[0]
 }
 
 // renderPartial executes a named partial template for HTMX responses.

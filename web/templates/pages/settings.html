@@ -56,10 +56,11 @@
         <h3 class="card-title">Appearance</h3>
         <div class="form-row">
             <div class="form-group form-group-sm">
-                <label for="theme_mode">Theme</label>
+                <label for="theme_mode">Color Theme</label>
                 <select id="theme_mode" name="theme_mode" class="form-input">
-                    <option value="dark" {{if eq (index .Settings "theme_mode") "dark"}}selected{{end}}>Dark</option>
-                    <option value="light" {{if eq (index .Settings "theme_mode") "light"}}selected{{end}}>Light</option>
+                    {{range .Themes}}
+                    <option value="{{.ID}}" {{if eq .ID $.CurrentTheme}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
                 </select>
             </div>
             <div class="form-group form-group-sm">

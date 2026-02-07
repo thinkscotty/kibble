@@ -109,7 +109,7 @@ func (db *DB) seedSettings() error {
 		"gemini_api_key":          "",
 		"ai_custom_instructions":  "",
 		"ai_tone_instructions":    "",
-		"theme_mode":              "dark",
+		"theme_mode":              "soft-dark",
 		"text_size":               "medium",
 		"card_columns":            "3",
 		"facts_per_topic_display": "5",
