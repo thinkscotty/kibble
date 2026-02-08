@@ -10,6 +10,17 @@ import (
 	"github.com/thinkscotty/kibble/internal/models"
 )
 
+// isHTTPS checks if the original request was made over HTTPS by examining
+// the X-Forwarded-Proto header (set by reverse proxies) or the TLS state.
+func isHTTPS(r *http.Request) bool {
+	// Check X-Forwarded-Proto header (set by Caddy/nginx/etc)
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto == "https" {
+		return true
+	}
+	// Check if direct TLS connection
+	return r.TLS != nil
+}
+
 func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{"Page": "login"}
 	s.render(w, "login", data)
@@ -69,6 +80,7 @@ func (s *Server) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   isHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   7 * 24 * 60 * 60,
 	})
@@ -87,6 +99,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   isHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})

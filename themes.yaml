@@ -72,8 +72,8 @@ themes:
       accent: "#a4d6ee"
       text: "#222b35"
       
-  - id: soft-bud
-    name: Soft Bud
+  - id: soft-blue
+    name: Soft Blue
     scheme: light
     logo: dark
     colors:
@@ -112,9 +112,9 @@ themes:
       text: "#E7ECEF"
       
   - id: chestnuts
-    name: Soft Bud
+    name: Chestnuts
     scheme: light
-    logo: dark
+    logo: light
     colors:
       background: "#F9F7F0"
       surface: "#F9F4F1"
@@ -124,3 +124,15 @@ themes:
       accent: "#1c3041"
       text: "#121F2B" 
 
+  - id: happy-days
+    name: Happy Days
+    scheme: light
+    logo: light
+    colors:
+      background: "#F9F7F0"
+      surface: "#F9F4F1"
+      navbar: "#772E25"
+      navbar_text: "#F9F7F0"
+      primary: "#918868"
+      accent: "#1c3041"
+      text: "#121F2B"
