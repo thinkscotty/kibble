@@ -19,26 +19,30 @@ import (
 )
 
 type Server struct {
-	cfg      config.Config
-	db       *database.DB
-	gemini   *gemini.Client
-	sim      *similarity.Checker
-	sched    *scheduler.Scheduler
-	themes   []config.Theme
-	hasUsers atomic.Bool
-	pages    map[string]*template.Template
-	partials *template.Template
-	httpSrv  *http.Server
+	cfg       config.Config
+	db        *database.DB
+	gemini    *gemini.Client
+	sim       *similarity.Checker
+	sched     *scheduler.Scheduler
+	themes    []config.Theme
+	hasUsers  atomic.Bool
+	version   string
+	buildTime string
+	pages     map[string]*template.Template
+	partials  *template.Template
+	httpSrv   *http.Server
 }
 
-func New(cfg config.Config, db *database.DB, geminiClient *gemini.Client, sim *similarity.Checker, sched *scheduler.Scheduler, themes []config.Theme) *Server {
+func New(cfg config.Config, db *database.DB, geminiClient *gemini.Client, sim *similarity.Checker, sched *scheduler.Scheduler, themes []config.Theme, version, buildTime string) *Server {
 	s := &Server{
-		cfg:    cfg,
-		db:     db,
-		gemini: geminiClient,
-		sim:    sim,
-		sched:  sched,
-		themes: themes,
+		cfg:       cfg,
+		db:        db,
+		gemini:    geminiClient,
+		sim:       sim,
+		sched:     sched,
+		themes:    themes,
+		version:   version,
+		buildTime: buildTime,
 	}
 	if count, _ := db.UserCount(); count > 0 {
 		s.hasUsers.Store(true)
@@ -113,6 +117,8 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.Handle("POST /settings", s.requireAuth(http.HandlerFunc(s.handleSettingsUpdate)))
 	mux.Handle("POST /settings/apikey/test", s.requireAuth(http.HandlerFunc(s.handleAPIKeyTest)))
 	mux.Handle("POST /settings/apikey/regenerate", s.requireAuth(http.HandlerFunc(s.handleAPIKeyRegenerate)))
+	mux.Handle("POST /settings/update/check", s.requireAuth(http.HandlerFunc(s.handleUpdateCheck)))
+	mux.Handle("POST /settings/update/install", s.requireAuth(http.HandlerFunc(s.handleUpdateInstall)))
 }
 
 func (s *Server) loadTemplates() error {
@@ -199,6 +205,10 @@ func (s *Server) render(w http.ResponseWriter, page string, data map[string]any)
 		settings, _ := s.db.GetAllSettings()
 		data["Settings"] = settings
 	}
+
+	// Inject version info
+	data["Version"] = s.version
+	data["BuildTime"] = s.buildTime
 
 	// Resolve the active theme and inject CSS variables + logo choice
 	s.injectThemeData(data)

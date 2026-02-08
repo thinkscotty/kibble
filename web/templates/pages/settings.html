@@ -122,6 +122,24 @@
         </div>
     </div>
 
+    <!-- Update Kibble -->
+    <div class="card">
+        <h3 class="card-title">Update Kibble</h3>
+        <p class="text-muted text-sm">
+            Current version: <strong>{{.Version}}</strong>
+            {{if ne .BuildTime "unknown"}} &middot; Built {{.BuildTime}}{{end}}
+        </p>
+        <div style="margin-top: 0.75rem;">
+            <button type="button" class="btn btn-secondary"
+                    hx-post="/settings/update/check"
+                    hx-target="#update-result"
+                    hx-swap="innerHTML">
+                Check for Updates
+            </button>
+        </div>
+        <div id="update-result" style="margin-top: 0.75rem;"></div>
+    </div>
+
     <div class="form-actions-footer">
         <button type="submit" class="btn btn-primary btn-lg">Save Settings</button>
     </div>

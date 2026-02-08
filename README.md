@@ -1,19 +1,22 @@
 # Kibble
 
-Kibble is a lightweight, AI-powered facts generator that runs on minimal hardware like a Raspberry Pi. It uses Google's Gemini Flash 2.5 AI to generate interesting facts about topics you choose, and displays them through a clean web interface.
+Kibble is a lightweight, AI-powered facts generator web application. It uses Google's Gemini Flash 2.5 AI to generate interesting facts about topics you choose, caches them in SQLite, and displays them through a clean, themeable web interface. Facts are also served to external client devices (LED matrices, smart displays) via a JSON API.
+
+Deploys as a single binary with no external dependencies.
 
 ## What Does Kibble Do?
 
 1. **You add topics** (e.g., "Space", "Ancient History", "Marine Biology") with brief descriptions
 2. **Kibble asks an AI** to generate interesting facts about each topic
-3. **Facts are displayed** on a dashboard you can view from any device on your network
-4. **External devices** (LED tickers, smart displays) can fetch facts via a simple API
+3. **Facts are displayed** on a themeable dashboard you can view from any device
+4. **External devices** (LED tickers, smart displays) can fetch facts via a simple JSON API
+5. **Updates itself** from the Settings page with one click
 
 Kibble automatically refreshes facts on a schedule you set, and it's smart enough to avoid generating duplicate facts.
 
 ## Requirements
 
-- A computer to run Kibble on (works great on a Raspberry Pi 3B+ or newer)
+- A server or computer to run Kibble on (VPS, Raspberry Pi 3B+, or any Linux/macOS machine)
 - A free Google Gemini API key (instructions below)
 
 ## Getting Your Gemini API Key (Free)
@@ -34,16 +37,30 @@ The free tier is generous and more than enough for personal use.
 
 | System | File to Download |
 |--------|------------------|
+| **Linux VPS / Cloud Server** (x86_64) | `kibble-linux-amd64` |
 | **Raspberry Pi 3B+/4/5** (64-bit OS) | `kibble-linux-arm64` |
 | **Raspberry Pi** (32-bit OS) | `kibble-linux-arm` |
-| **Linux PC** | `kibble-linux-amd64` |
 | **Mac (Apple Silicon)** | `kibble-darwin-arm64` |
 
-3. Make it executable and run it:
+3. Install the binary:
 
 ```bash
-chmod +x kibble-linux-arm64
-./kibble-linux-arm64
+# Download (replace URL with the latest release and your platform)
+wget https://github.com/thinkscotty/kibble/releases/latest/download/kibble-linux-amd64
+
+# Install to a standard location
+sudo cp kibble-linux-amd64 /usr/local/bin/kibble
+sudo chmod +x /usr/local/bin/kibble
+
+# Create a data directory
+sudo mkdir -p /var/lib/kibble
+```
+
+4. Run it:
+
+```bash
+cd /var/lib/kibble
+kibble
 ```
 
 > **Tip for Raspberry Pi users:** If you're not sure whether you're running 32-bit or 64-bit, run `uname -m` in a terminal. If it says `aarch64`, download the `arm64` version. If it says `armv7l`, download the `arm` version.
@@ -69,17 +86,18 @@ make build-arm64
 
 ## Running Kibble
 
-Simply run the binary:
+Simply run the binary from the directory where you want the database stored:
 
 ```bash
-./kibble
+cd /var/lib/kibble
+kibble
 ```
 
 Kibble will:
 1. Create a `kibble.db` database file in the current directory
 2. Start a web server on port 8080
 
-Open your browser and go to: **http://localhost:8080** (or replace `localhost` with your Pi's IP address if accessing from another device).
+Open your browser and go to: **http://localhost:8080** (or your server's IP/domain).
 
 ### Configuration (Optional)
 
@@ -107,9 +125,12 @@ All of these have sensible defaults, so the config file is entirely optional.
 
 ### First-Time Setup
 
-1. Go to the **Settings** page
-2. Paste your Gemini API key and click "Test Key" to verify it works
-3. Click "Save Settings"
+1. Open Kibble in your browser — you'll be directed to create an admin account
+2. Set a username and password (minimum 8 characters)
+3. Log in with your new credentials
+4. Go to the **Settings** page
+5. Paste your Gemini API key and click "Test Key" to verify it works
+6. Click "Save Settings"
 
 ### Adding Topics
 
@@ -166,28 +187,65 @@ GET /api/v1/facts/random
 
 This returns a single random fact from any active topic — perfect for scrolling tickers.
 
-## Running as a Service (Raspberry Pi)
+## Production Deployment
 
-To run Kibble automatically on boot, create a systemd service:
+### Running as a Systemd Service
+
+Create a systemd service so Kibble starts on boot and stays running:
 
 ```bash
 sudo nano /etc/systemd/system/kibble.service
 ```
 
-Paste the following (adjust paths as needed):
+#### For a VPS (Alma Linux / Rocky Linux / Ubuntu):
 
 ```ini
 [Unit]
-Description=Kibble Facts Generator
+Description=Kibble Facts Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/var/lib/kibble
+ExecStart=/usr/local/bin/kibble
+Restart=on-failure
+RestartSec=5s
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kibble
+
+[Install]
+WantedBy=multi-user.target
+```
+
+#### For a Raspberry Pi:
+
+```ini
+[Unit]
+Description=Kibble Facts Dashboard
 After=network.target
 
 [Service]
 Type=simple
 User=pi
+Group=pi
 WorkingDirectory=/home/pi/kibble
-ExecStart=/home/pi/kibble/kibble
-Restart=always
-RestartSec=5
+ExecStart=/home/pi/kibble/kibble-linux-arm64
+Restart=on-failure
+RestartSec=5s
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kibble
 
 [Install]
 WantedBy=multi-user.target
@@ -196,11 +254,86 @@ WantedBy=multi-user.target
 Then enable and start it:
 
 ```bash
+sudo systemctl daemon-reload
 sudo systemctl enable kibble
 sudo systemctl start kibble
 ```
 
 Check status with: `sudo systemctl status kibble`
+
+View logs with: `sudo journalctl -u kibble -f`
+
+### SELinux (RHEL / Alma Linux / Rocky Linux)
+
+If you're running a RHEL-based distribution with SELinux enforcing, set the correct file context:
+
+```bash
+sudo semanage fcontext -a -t var_lib_t "/var/lib/kibble(/.*)?"
+sudo restorecon -Rv /var/lib/kibble
+```
+
+### Reverse Proxy with Caddy (for HTTPS)
+
+If you're exposing Kibble to the internet (e.g., via Cloudflare Tunnel), use Caddy as a reverse proxy:
+
+```bash
+sudo dnf install caddy   # or apt install caddy
+```
+
+Create `/etc/caddy/Caddyfile`:
+
+```
+:80 {
+    reverse_proxy localhost:8080 {
+        header_up X-Forwarded-Proto https
+    }
+}
+```
+
+```bash
+sudo systemctl enable --now caddy
+```
+
+Kibble automatically detects the `X-Forwarded-Proto` header and sets secure cookies when behind HTTPS.
+
+### Directory Structure (Recommended)
+
+```
+/usr/local/bin/kibble          # Binary
+/var/lib/kibble/               # Working directory
+/var/lib/kibble/kibble.db      # SQLite database (auto-created)
+/var/lib/kibble/config.yaml    # Optional config file
+/etc/systemd/system/kibble.service  # Systemd service
+```
+
+## Updating Kibble
+
+### Browser-Based Update (Recommended)
+
+Kibble can update itself from the Settings page:
+
+1. Go to **Settings** and scroll to the **Update Kibble** card
+2. Click **Check for Updates** to see if a new version is available
+3. If an update is available, click **Install Update**
+4. Kibble will download the correct binary for your platform, replace itself, and restart automatically
+5. The page will reload with the new version
+
+Your database, settings, topics, facts, and password are never affected by updates.
+
+> **Note:** The self-update feature requires that the Kibble process has write permission to its own binary location. If running as a systemd service with `User=root`, this works automatically. If running as a non-root user, ensure the user has write access to the binary directory.
+
+### Manual Update
+
+```bash
+# Download the new binary
+wget https://github.com/thinkscotty/kibble/releases/latest/download/kibble-linux-amd64
+
+# Stop the service, replace the binary, and restart
+sudo systemctl stop kibble
+sudo cp kibble-linux-amd64 /usr/local/bin/kibble
+sudo chmod +x /usr/local/bin/kibble
+sudo systemctl start kibble
+```
 
 ## Troubleshooting
 

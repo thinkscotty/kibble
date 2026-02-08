@@ -84,7 +84,7 @@ func main() {
 	sched := scheduler.New(db, geminiClient, sim)
 
 	// Build HTTP server
-	srv := server.New(cfg, db, geminiClient, sim, sched, themes)
+	srv := server.New(cfg, db, geminiClient, sim, sched, themes, version, buildTime)
 
 	// Start scheduler in background
 	ctx, cancel := context.WithCancel(context.Background())

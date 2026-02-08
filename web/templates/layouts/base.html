@@ -37,6 +37,18 @@
                     setTimeout(function() { window.location.reload(); }, 500);
                 }
             }
+            // After update install, poll for service restart then reload
+            if (e.detail.pathInfo && e.detail.pathInfo.requestPath === "/settings/update/install") {
+                if (e.detail.successful) {
+                    setTimeout(function pollReload() {
+                        fetch("/login", {method: "HEAD"}).then(function() {
+                            window.location.reload();
+                        }).catch(function() {
+                            setTimeout(pollReload, 2000);
+                        });
+                    }, 4000);
+                }
+            }
         });
     </script>
 </body>
