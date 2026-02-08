@@ -124,15 +124,15 @@ themes:
       accent: "#1c3041"
       text: "#121F2B" 
 
-  - id: happy-days
-    name: Happy Days
+  - id: eucalyptus
+    name: Eucalyptus
     scheme: light
     logo: light
     colors:
-      background: "#F9F7F0"
-      surface: "#F9F4F1"
-      navbar: "#772E25"
-      navbar_text: "#F9F7F0"
-      primary: "#918868"
-      accent: "#1c3041"
-      text: "#121F2B"
+      background: "#FCFCFC"
+      surface: "#F9EEDC"
+      navbar: "#637E6E"
+      navbar_text: "#FCFCFC"
+      primary: "#CC3F0C"
+      accent: "#637E6E"
+      text: "#28262C"
