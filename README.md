@@ -210,7 +210,7 @@ User=root
 Group=root
 WorkingDirectory=/var/lib/kibble
 ExecStart=/usr/local/bin/kibble
-Restart=on-failure
+Restart=always
 RestartSec=5s
 
 NoNewPrivileges=true
@@ -237,7 +237,7 @@ User=pi
 Group=pi
 WorkingDirectory=/home/pi/kibble
 ExecStart=/home/pi/kibble/kibble-linux-arm64
-Restart=on-failure
+Restart=always
 RestartSec=5s
 
 NoNewPrivileges=true

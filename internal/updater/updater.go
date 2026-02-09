@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -191,17 +190,26 @@ func DownloadAndInstall(ctx context.Context, info *ReleaseInfo, currentVersion s
 // RestartService attempts to restart the kibble systemd service.
 func RestartService() error {
 	if path, err := exec.LookPath("systemctl"); err == nil {
-		slog.Info("Restarting via systemctl")
+		slog.Info("Restarting via systemctl", "service", "kibble")
 		cmd := exec.Command(path, "restart", "kibble")
-		if err := cmd.Run(); err != nil {
-			slog.Warn("systemctl restart failed, falling back to self-signal", "error", err)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			slog.Warn("systemctl restart failed, falling back to process exit",
+				"error", err, "output", string(output))
 		} else {
+			slog.Info("systemctl restart succeeded")
 			return nil
 		}
+	} else {
+		slog.Info("systemctl not found, using process exit for restart")
 	}
 
-	slog.Info("Sending SIGTERM to self for restart")
-	return syscall.Kill(os.Getpid(), syscall.SIGTERM)
+	// Fallback: exit cleanly and let systemd restart us
+	// This works with Restart=always in the systemd service
+	slog.Info("Exiting process to trigger systemd restart")
+	time.Sleep(100 * time.Millisecond) // Brief delay to flush logs
+	os.Exit(0)
+	return nil
 }
 
 // matchAsset finds the GitHub release asset matching the current platform.
@@ -222,6 +230,12 @@ func isNewer(current, latest string) bool {
 
 	// Strip -dirty suffix
 	current = strings.TrimSuffix(current, "-dirty")
+
+	// Handle git describe output like "0.8.2-3-gabcdef1"
+	// Extract just the version number before the dash
+	if idx := strings.Index(current, "-"); idx > 0 {
+		current = current[:idx]
+	}
 
 	// If current is "dev" or a commit hash, any release is newer
 	if current == "dev" || current == "unknown" || !isSemver(current) {
