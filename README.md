@@ -342,6 +342,54 @@ sudo systemctl start kibble
 - **Page not loading**: Make sure nothing else is using port 8080, or change the port in `config.yaml`
 - **Can't access from another device**: Make sure you're using the Pi's IP address (not `localhost`) and that both devices are on the same network
 
+## Uninstalling Kibble
+
+To completely remove Kibble from your system, use the provided uninstall script:
+
+```bash
+# Download the uninstall script
+wget https://raw.githubusercontent.com/thinkscotty/kibble/main/uninstall.sh
+
+# Make it executable
+chmod +x uninstall.sh
+
+# Run with sudo
+sudo ./uninstall.sh
+```
+
+The script will:
+1. Stop and remove the systemd service
+2. Remove Kibble binaries from common locations
+3. Ask if you want to remove data directories (database, config, themes)
+4. Search for any remaining Kibble files
+
+**Note:** If you choose to keep your data directory when uninstalling, you can reinstall Kibble later and your topics, facts, and settings will be preserved.
+
+### Manual Uninstall
+
+If you prefer to uninstall manually:
+
+```bash
+# Stop and disable the service
+sudo systemctl stop kibble
+sudo systemctl disable kibble
+
+# Remove the service file
+sudo rm /etc/systemd/system/kibble.service
+sudo systemctl daemon-reload
+
+# Remove the binary (VPS)
+sudo rm /usr/local/bin/kibble
+
+# Or remove the binary (Raspberry Pi)
+rm ~/kibble/kibble-linux-arm64
+
+# Remove data directory (optional - contains your topics and facts)
+sudo rm -rf /var/lib/kibble  # VPS
+# or
+rm -rf ~/kibble  # Raspberry Pi
+```
+
 ## License
 
 MIT
