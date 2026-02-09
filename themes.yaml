@@ -34,19 +34,6 @@ themes:
       accent: "#e94f37"
       text: "#ffffff" 
 
-  - id: Simple
-    name: Simple
-    scheme: light
-    logo: light
-    colors:
-      background: "#FEFEFF"
-      surface: "#FFFFFF"
-      navbar: "#31485E"
-      navbar_text: "#FEFEFF"
-      primary: "#4DA167"
-      accent: "#de6449"
-      text: "#292F36"
-
   - id: soft-dark
     name: Soft Dark
     scheme: dark
@@ -64,13 +51,13 @@ themes:
     scheme: light  
     logo: light
     colors:
-      background: "#F4F4F8"
-      surface: "#FCFDED"
-      navbar: "#3772FF"
-      navbar_text: "#F4F4F8"
-      primary: "#F58A07"
-      accent: "#0049B8"
-      text: "#001029"
+      background: "#a4def6"
+      surface: "#a4def6"
+      navbar: "#a4def6"
+      navbar_text: "#f5f6f2"
+      primary: "#feec1b"
+      accent: "#fcf8a1"
+      text: "#f5f6f2"
       
   - id: soft-blue
     name: Soft Blue
@@ -100,13 +87,39 @@ themes:
       
   - id: murica
     name: Murica
+    scheme: dark
+    logo: light
+    colors:
+      background: "#071B4A"
+      surface: "#09225D"
+      navbar: "#09225D"
+      navbar_text: "#FFFFFA"
+      primary: "#FFFFFA"
+      accent: "#EDB431"
+      text: "#FFFFFA"
+      
+  - id: cream
+    name: Cream
     scheme: light
     logo: light
     colors:
-      background: "#f9fbfb"
-      surface: "#f9fbfb"
-      navbar: "#0071b7"
-      navbar_text: "#f9fbfb"
-      primary: "#c20c0b"
-      accent: "#0071b7"
-      text: "#2f3232"
+      background: "#FEF8EC"
+      surface: "#FDF1D8"
+      navbar: "#FDF1D8"
+      navbar_text: "#2C3D4E"
+      primary: "#FED9AF"
+      accent: "#8FBFE0"
+      text: "#2C3D4E"
+      
+  - id: pretty-pretty
+    name: Pretty Pretty
+    scheme: light
+    logo: light
+    colors:
+      background: "#FADCE8"
+      surface: "#F5CCD4"
+      navbar: "#F2BBC6"
+      navbar_text: "#231939"
+      primary: "#925E78"
+      accent: "#925E78"
+      text: "#231939"
