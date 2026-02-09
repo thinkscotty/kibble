@@ -20,13 +20,14 @@ type Theme struct {
 
 // ThemeColors holds the core colors that define a theme.
 type ThemeColors struct {
-	Background string `yaml:"background"`            // page background
-	Surface    string `yaml:"surface"`               // card/panel backgrounds
-	Navbar     string `yaml:"navbar"`                // navigation bar background
-	NavbarText string `yaml:"navbar_text,omitempty"` // navbar text (optional - auto-calculated if empty)
-	Primary    string `yaml:"primary"`               // buttons, links, active accents
-	Accent     string `yaml:"accent"`                // highlights, secondary accents
-	Text       string `yaml:"text"`                  // main body text
+	Background string `yaml:"background"`             // page background
+	Surface    string `yaml:"surface"`                // card/panel backgrounds
+	Navbar     string `yaml:"navbar"`                 // navigation bar background
+	NavbarText string `yaml:"navbar_text,omitempty"`  // navbar text (optional - auto-calculated if empty)
+	Primary    string `yaml:"primary"`                // buttons, links, active accents
+	Accent     string `yaml:"accent"`                 // highlights, secondary accents
+	Text       string `yaml:"text"`                   // main body text
+	LogoColor  string `yaml:"logo_color,omitempty"`   // logo color (optional - derived from logo field or navbar luminance if empty)
 }
 
 type themesFile struct {
@@ -153,6 +154,23 @@ func ResolveThemeCSS(t Theme) string {
 		}
 	}
 	writeProp("navbar-text", navbarTextColor)
+
+	// Logo color: explicit value > derive from logo field > auto-calculate from navbar
+	logoColor := c.LogoColor
+	if logoColor == "" {
+		switch t.Logo {
+		case "light":
+			logoColor = "#ffffff"
+		case "dark":
+			logoColor = "#2d323b"
+		default:
+			logoColor = "#ffffff"
+			if luminance(navbar) > 0.5 {
+				logoColor = "#2d323b"
+			}
+		}
+	}
+	writeProp("logo-color", logoColor)
 
 	writeProp("shadow", fmt.Sprintf("0 2px 4px rgba(%d, %d, %d, %.2f), 0 8px 24px rgba(0, 0, 0, %.2f)",
 		shadowColor.r, shadowColor.g, shadowColor.b, shadowAlpha, shadowAlpha))

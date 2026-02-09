@@ -10,7 +10,7 @@
 #   id          Unique identifier (lowercase, hyphens). Stored in the database.
 #   name        Display name shown in the Settings dropdown.
 #   scheme      Browser color-scheme: "dark" or "light".
-#   logo        Which logo to display: "light" (white logo) or "dark" (black logo).
+#   logo        Fallback logo style: "light" (white) or "dark" (black). Used only if logo_color is not set.
 #   colors:
 #     background   Page background color.
 #     surface      Card and panel background color.
@@ -19,8 +19,23 @@
 #     primary      Buttons, links, and active accent color.
 #     accent       Highlights and secondary accent color.
 #     text         Main body text color.
+#     logo_color   Logo color (optional - derived from logo field or navbar luminance if not set).
 
 themes:
+  - id: kibble
+    name: Kibble
+    scheme: light
+    logo: light
+    colors:
+      background: "#fefffa"
+      surface: "#fefffa"
+      navbar: "#4a6c92"
+      navbar_text: "#fefffa"
+      primary: "#98644c"
+      accent: "#ddcfa8"
+      text: "#ddcfa8"
+      logo_color: "#ddcfa8"
+      
   - id: classic-dark
     name: Classic Dark
     scheme: dark
@@ -46,31 +61,31 @@ themes:
       accent: "#567E75"
       text: "#e9efea"
 
-  - id: bright-ocean
-    name: Bright Ocean
+  - id: seaglass
+    name: Sea Glass
     scheme: light  
     logo: light
     colors:
-      background: "#a4def6"
-      surface: "#a4def6"
-      navbar: "#a4def6"
-      navbar_text: "#f5f6f2"
-      primary: "#feec1b"
-      accent: "#fcf8a1"
-      text: "#f5f6f2"
+      background: "#DBE6DD"
+      surface: "#CFDDD2"
+      navbar: "#475B63"
+      navbar_text: "#FCF2EE"
+      primary: "#475B63"
+      accent: "#E9AFC7"
+      text: "#FCF2EE"
       
   - id: soft-blue
     name: Soft Blue
     scheme: light
     logo: dark
     colors:
-      background: "#E4EEF1"
-      surface: "#B7D1DA"
-      navbar: "#B7D1DA"
-      navbar_text: "#161712"
+      background: "#7EB6F6"
+      surface: "#83B9F7"
+      navbar: "#FFF1E4"
+      navbar_text: "#140700"
       primary: "#779FA1"
-      accent: "#E86A92"
-      text: "#161712" 
+      accent: "#FD935D"
+      text: "#FFFFFF" 
       
   - id: coffee-mate
     name: Coffee Mate
@@ -92,7 +107,7 @@ themes:
     colors:
       background: "#071B4A"
       surface: "#09225D"
-      navbar: "#09225D"
+      navbar: "#B41825"
       navbar_text: "#FFFFFA"
       primary: "#FFFFFA"
       accent: "#EDB431"
@@ -114,7 +129,7 @@ themes:
   - id: pretty-pretty
     name: Pretty Pretty
     scheme: light
-    logo: light
+    logo: dark
     colors:
       background: "#FADCE8"
       surface: "#F5CCD4"

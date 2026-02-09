@@ -71,8 +71,16 @@ a:hover {
 }
 
 .nav-logo {
+    display: block;
     height: 64px;
-    width: auto;
+    width: 160px;
+    background-color: var(--logo-color);
+    -webkit-mask-image: url(/static/img/kibble_logo.svg);
+    mask-image: url(/static/img/kibble_logo.svg);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
 }
 
 .nav-links {
@@ -743,8 +751,17 @@ a:hover {
 }
 
 .auth-logo-img {
+    display: block;
     height: 80px;
-    width: auto;
+    width: 200px;
+    margin: 0 auto;
+    background-color: var(--logo-color);
+    -webkit-mask-image: url(/static/img/kibble_logo.svg);
+    mask-image: url(/static/img/kibble_logo.svg);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
 }
 
 .auth-title {

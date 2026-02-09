@@ -229,7 +229,6 @@ func (s *Server) injectThemeData(data map[string]any) {
 
 	theme := s.findTheme(themeID)
 	data["ThemeCSS"] = template.CSS(config.ResolveThemeCSS(theme))
-	data["ThemeLogo"] = theme.Logo
 	data["Themes"] = s.themes
 	data["CurrentTheme"] = theme.ID
 }
