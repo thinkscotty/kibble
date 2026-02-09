@@ -61,16 +61,16 @@ themes:
 
   - id: bright-ocean
     name: Bright Ocean
-    scheme: light
+    scheme: light  
     logo: light
     colors:
-      background: "#eeebf0"
-      surface: "#e2e7f0"
-      navbar: "#6F94C0"
-      navbar_text: "#eeebf0"
-      primary: "#a6c8e8"
-      accent: "#a4d6ee"
-      text: "#222b35"
+      background: "#F4F4F8"
+      surface: "#FCFDED"
+      navbar: "#3772FF"
+      navbar_text: "#F4F4F8"
+      primary: "#F58A07"
+      accent: "#0049B8"
+      text: "#001029"
       
   - id: soft-blue
     name: Soft Blue
@@ -85,28 +85,28 @@ themes:
       accent: "#E86A92"
       text: "#161712" 
       
-  - id: yale
-    name: Yale
+  - id: coffee-mate
+    name: Coffee Mate
+    scheme: dark
+    logo: light
+    colors:
+      background: "#3F2D27"
+      surface: "#4C362F"
+      navbar: "#3F2D27"
+      navbar_text: "#FBFBF2"
+      primary: "#AB8476"
+      accent: "#FFA737"
+      text: "#FBFBF2"
+      
+  - id: murica
+    name: Murica
     scheme: light
     logo: light
     colors:
-      background: "#FFFFFF"
-      surface: "#CAD7E3"
-      navbar: "#799AB9"
-      navbar_text: "#E4EEF1"
-      primary: "#DE6E4B"
-      accent: "#0D1A30"
-      text: "#0D1A30" 
-
-  - id: eucalyptus
-    name: Eucalyptus
-    scheme: light
-    logo: light
-    colors:
-      background: "#FCFCFC"
-      surface: "#E9EDEB"
-      navbar: "#637E6E"
-      navbar_text: "#FCFCFC"
-      primary: "#CC3F0C"
-      accent: "#637E6E"
-      text: "#28262C"
+      background: "#f9fbfb"
+      surface: "#f9fbfb"
+      navbar: "#0071b7"
+      navbar_text: "#f9fbfb"
+      primary: "#c20c0b"
+      accent: "#0071b7"
+      text: "#2f3232"
