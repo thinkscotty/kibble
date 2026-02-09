@@ -40,13 +40,33 @@
             // After update install, poll for service restart then reload
             if (e.detail.pathInfo && e.detail.pathInfo.requestPath === "/settings/update/install") {
                 if (e.detail.successful) {
+                    // Wait longer before first poll to give service time to restart
+                    // Then poll with exponential backoff up to a maximum
+                    var attempts = 0;
+                    var maxAttempts = 30; // 30 attempts over ~60 seconds
+
                     setTimeout(function pollReload() {
-                        fetch("/login", {method: "HEAD"}).then(function() {
-                            window.location.reload();
-                        }).catch(function() {
-                            setTimeout(pollReload, 2000);
-                        });
-                    }, 4000);
+                        attempts++;
+                        fetch("/login", {method: "HEAD", cache: "no-cache"})
+                            .then(function(response) {
+                                if (response.ok || response.status === 401) {
+                                    // Service is back up (200 or 401 redirect to login)
+                                    window.location.reload();
+                                } else {
+                                    throw new Error("Service not ready");
+                                }
+                            })
+                            .catch(function() {
+                                if (attempts < maxAttempts) {
+                                    // Exponential backoff: 2s, 2s, 3s, 3s, 4s, 4s, 5s...
+                                    var delay = Math.min(2000 + Math.floor(attempts / 2) * 1000, 5000);
+                                    setTimeout(pollReload, delay);
+                                } else {
+                                    // Give up after max attempts, show error
+                                    alert("Service restart is taking longer than expected. Please refresh the page manually or check the service status.");
+                                }
+                            });
+                    }, 6000); // Wait 6 seconds before first poll
                 }
             }
         });

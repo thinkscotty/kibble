@@ -90,15 +90,18 @@ func (s *Server) handleUpdateInstall(w http.ResponseWriter, r *http.Request) {
 		<p class="text-muted text-sm" style="margin-top: 0.5rem;">
 			Updated from %s to %s. Restarting service...
 		</p>
-		<p class="text-muted text-sm">This page will reload automatically in a few seconds.</p>
+		<p class="text-muted text-sm">Please wait while the service restarts (this may take 10-15 seconds).</p>
+		<p class="text-muted text-sm">The page will reload automatically when ready.</p>
 	</div>`,
 		template.HTMLEscapeString(result.OldVersion),
 		template.HTMLEscapeString(result.NewVersion),
 	)
 
 	// Schedule restart after response is sent
+	// Give the response time to be sent and received before restarting
 	go func() {
-		time.Sleep(2 * time.Second)
+		time.Sleep(3 * time.Second)
+		slog.Info("Initiating service restart after update")
 		if err := updater.RestartService(); err != nil {
 			slog.Error("Failed to restart service", "error", err)
 		}
