@@ -235,17 +235,34 @@ func (s *Server) injectThemeData(data map[string]any) {
 }
 
 // findTheme looks up a theme by ID, falling back to the first available theme.
+// If the requested theme is not found, it logs a warning and updates the database
+// to the fallback theme.
 func (s *Server) findTheme(id string) config.Theme {
 	for _, t := range s.themes {
 		if t.ID == id {
 			return t
 		}
 	}
+
+	// Theme not found - fall back and update database
+	var fallback config.Theme
 	if len(s.themes) > 0 {
-		return s.themes[0]
+		fallback = s.themes[0]
+	} else {
+		fallback = config.DefaultThemes()[0]
 	}
-	// Absolute fallback if no themes configured at all
-	return config.DefaultThemes()[0]
+
+	if id != "" && id != fallback.ID {
+		slog.Warn("Selected theme no longer exists, falling back to default",
+			"requested", id, "fallback", fallback.ID)
+
+		// Update database to the fallback theme so the Settings page shows the correct selection
+		if err := s.db.SetSetting("theme_mode", fallback.ID); err != nil {
+			slog.Error("Failed to update theme_mode setting", "error", err)
+		}
+	}
+
+	return fallback
 }
 
 // renderPartial executes a named partial template for HTMX responses.

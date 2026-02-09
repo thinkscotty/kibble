@@ -41,7 +41,7 @@ themes:
     colors:
       background: "#FEFEFF"
       surface: "#FFFFFF"
-      navbar: "#292F36"
+      navbar: "#31485E"
       navbar_text: "#FEFEFF"
       primary: "#4DA167"
       accent: "#de6449"
@@ -77,7 +77,7 @@ themes:
     scheme: light
     logo: dark
     colors:
-      background: "#E2E8DD"
+      background: "#E4EEF1"
       surface: "#B7D1DA"
       navbar: "#B7D1DA"
       navbar_text: "#161712"
@@ -91,38 +91,12 @@ themes:
     logo: light
     colors:
       background: "#FFFFFF"
-      surface: "#F1F6F9"
-      navbar: "#284B63"
-      navbar_text: "#ffffff"
-      primary: "#CD5334"
-      accent: "#E39774"
-      text: "#0E0F19" 
-
-  - id: iron
-    name: Iron
-    scheme: dark
-    logo: light
-    colors:
-      background: "#343F3E"
-      surface: "#505A5B"
-      navbar: "#505A5B"
-      navbar_text: "#E7ECEF"
-      primary: "#F5853F"
-      accent: "#7FB069"
-      text: "#E7ECEF"
-      
-  - id: chestnuts
-    name: Chestnuts
-    scheme: light
-    logo: light
-    colors:
-      background: "#F9F7F0"
-      surface: "#F9F4F1"
-      navbar: "#772E25"
-      navbar_text: "#F9F7F0"
-      primary: "#918868"
-      accent: "#1c3041"
-      text: "#121F2B" 
+      surface: "#CAD7E3"
+      navbar: "#799AB9"
+      navbar_text: "#E4EEF1"
+      primary: "#DE6E4B"
+      accent: "#0D1A30"
+      text: "#0D1A30" 
 
   - id: eucalyptus
     name: Eucalyptus
@@ -130,7 +104,7 @@ themes:
     logo: light
     colors:
       background: "#FCFCFC"
-      surface: "#F9EEDC"
+      surface: "#E9EDEB"
       navbar: "#637E6E"
       navbar_text: "#FCFCFC"
       primary: "#CC3F0C"

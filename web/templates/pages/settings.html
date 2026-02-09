@@ -4,6 +4,7 @@
 <div class="page-header">
     <h1>Settings</h1>
     {{if .Success}}<div class="alert alert-success">{{.Success}}</div>{{end}}
+    {{if .Warning}}<div class="alert alert-warning">{{.Warning}}</div>{{end}}
 </div>
 
 <form hx-post="/settings" hx-target="body" hx-swap="outerHTML" hx-push-url="false">

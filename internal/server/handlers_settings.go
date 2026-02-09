@@ -21,6 +21,22 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 		"Page":     "settings",
 		"Settings": settings,
 	}
+
+	// Check if the currently selected theme exists
+	if themeID := settings["theme_mode"]; themeID != "" {
+		found := false
+		for _, t := range s.themes {
+			if t.ID == themeID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Theme was auto-corrected by findTheme - notify user
+			data["Warning"] = fmt.Sprintf("Your previous theme was removed in an update. Switched to the default theme.")
+		}
+	}
+
 	s.render(w, "settings", data)
 }
 
