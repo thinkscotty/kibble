@@ -168,24 +168,127 @@ On the **Settings** page you can give the AI custom instructions:
 
 ## External Device API
 
-Kibble provides a simple JSON API for external devices like LED matrix displays:
+Kibble provides a JSON API for external devices like LED matrix displays, smart screens, and custom clients.
 
-### Get Active Topics
+### Authentication
+
+All API endpoints require your Gemini API key. You can provide it in two ways:
+
+**Query parameter** (simplest for devices):
+```
+GET /api/v1/facts/random?api_key=YOUR_API_KEY
+```
+
+**Authorization header**:
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+The API key is the same Gemini API key you entered on the Settings page.
+
+### Endpoints
+
+#### Get Active Topics
 ```
 GET /api/v1/topics
 ```
+Returns all active topics with their fact counts.
 
-### Get Facts for a Topic
+**Response:**
+```json
+{
+  "topics": [
+    { "id": 1, "name": "Space", "fact_count": 25 },
+    { "id": 2, "name": "Marine Biology", "fact_count": 18 }
+  ]
+}
+```
+
+#### Get Facts for a Topic
 ```
 GET /api/v1/facts?topic_id=1&limit=5
 ```
+Returns facts for a specific topic. The `limit` parameter is optional (default: 10).
 
-### Get a Random Fact
+**Response:**
+```json
+{
+  "topic": "Space",
+  "facts": [
+    { "id": 42, "content": "The Voyager 1 spacecraft..." },
+    { "id": 41, "content": "A neutron star can spin..." }
+  ]
+}
+```
+
+#### Get All Facts
+```
+GET /api/v1/facts/all
+```
+Returns every non-archived fact from all active topics, grouped by topic. Use this to sync a client device with the complete fact library.
+
+**Response:**
+```json
+{
+  "topics": [
+    {
+      "topic_id": 1,
+      "topic_name": "Space",
+      "facts": [
+        { "id": 42, "content": "The Voyager 1 spacecraft..." },
+        { "id": 41, "content": "A neutron star can spin..." }
+      ]
+    },
+    {
+      "topic_id": 2,
+      "topic_name": "Marine Biology",
+      "facts": [ ... ]
+    }
+  ]
+}
+```
+
+#### Get Recent Facts
+```
+GET /api/v1/facts/recent
+```
+Returns the 100 most recently created facts from each active topic, grouped by topic. Useful for periodic syncs where you only need the latest content.
+
+**Response:** Same structure as `/api/v1/facts/all`, but capped at 100 facts per topic.
+
+#### Get a Random Fact
 ```
 GET /api/v1/facts/random
 ```
+Returns a single random fact from any active topic — perfect for scrolling tickers and displays.
 
-This returns a single random fact from any active topic — perfect for scrolling tickers.
+**Response:**
+```json
+{
+  "fact": {
+    "id": 42,
+    "topic": "Space",
+    "content": "The Voyager 1 spacecraft..."
+  }
+}
+```
+
+### Example: Client Device Sync
+
+To populate a client device with all current facts in a single request:
+```bash
+curl "https://your-domain.com/api/v1/facts/all?api_key=YOUR_API_KEY"
+```
+
+To periodically refresh with the latest facts:
+```bash
+curl "https://your-domain.com/api/v1/facts/recent?api_key=YOUR_API_KEY"
+```
+
+To fetch one random fact at a time (e.g., for an LED ticker):
+```bash
+curl "https://your-domain.com/api/v1/facts/random?api_key=YOUR_API_KEY"
+```
 
 ## Production Deployment
 
