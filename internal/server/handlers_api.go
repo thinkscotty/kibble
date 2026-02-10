@@ -84,6 +84,82 @@ func (s *Server) handleAPIFacts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleAPIAllFacts(w http.ResponseWriter, r *http.Request) {
+	topics, err := s.db.ListActiveTopics()
+	if err != nil || len(topics) == 0 {
+		jsonError(w, "No active topics found", 404)
+		return
+	}
+
+	type factResp struct {
+		ID      int64  `json:"id"`
+		Content string `json:"content"`
+	}
+	type topicFacts struct {
+		TopicID   int64      `json:"topic_id"`
+		TopicName string     `json:"topic_name"`
+		Facts     []factResp `json:"facts"`
+	}
+
+	var result []topicFacts
+	for _, t := range topics {
+		facts, err := s.db.ListFactsByTopic(t.ID, 100000)
+		if err != nil {
+			slog.Error("API: failed to list facts", "topic_id", t.ID, "error", err)
+			continue
+		}
+		var fl []factResp
+		for _, f := range facts {
+			fl = append(fl, factResp{ID: f.ID, Content: f.Content})
+		}
+		result = append(result, topicFacts{
+			TopicID:   t.ID,
+			TopicName: t.Name,
+			Facts:     fl,
+		})
+	}
+
+	jsonResponse(w, map[string]any{"topics": result})
+}
+
+func (s *Server) handleAPIRecentFacts(w http.ResponseWriter, r *http.Request) {
+	topics, err := s.db.ListActiveTopics()
+	if err != nil || len(topics) == 0 {
+		jsonError(w, "No active topics found", 404)
+		return
+	}
+
+	type factResp struct {
+		ID      int64  `json:"id"`
+		Content string `json:"content"`
+	}
+	type topicFacts struct {
+		TopicID   int64      `json:"topic_id"`
+		TopicName string     `json:"topic_name"`
+		Facts     []factResp `json:"facts"`
+	}
+
+	var result []topicFacts
+	for _, t := range topics {
+		facts, err := s.db.ListFactsByTopic(t.ID, 100)
+		if err != nil {
+			slog.Error("API: failed to list facts", "topic_id", t.ID, "error", err)
+			continue
+		}
+		var fl []factResp
+		for _, f := range facts {
+			fl = append(fl, factResp{ID: f.ID, Content: f.Content})
+		}
+		result = append(result, topicFacts{
+			TopicID:   t.ID,
+			TopicName: t.Name,
+			Facts:     fl,
+		})
+	}
+
+	jsonResponse(w, map[string]any{"topics": result})
+}
+
 func (s *Server) handleAPIRandomFact(w http.ResponseWriter, r *http.Request) {
 	topics, err := s.db.ListActiveTopics()
 	if err != nil || len(topics) == 0 {

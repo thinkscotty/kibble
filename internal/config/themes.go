@@ -193,7 +193,7 @@ type rgb struct {
 }
 
 func mustParseHex(hex string) rgb {
-	hex = strings.TrimPrefix(hex, "#")
+	hex = strings.TrimLeft(hex, "#")
 	if len(hex) == 3 {
 		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
 	}

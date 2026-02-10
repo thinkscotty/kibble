@@ -92,6 +92,8 @@ func (s *Server) routes(mux *http.ServeMux) {
 	// External Client API — protected by API key
 	mux.Handle("GET /api/v1/topics", s.requireAPIKey(http.HandlerFunc(s.handleAPITopics)))
 	mux.Handle("GET /api/v1/facts", s.requireAPIKey(http.HandlerFunc(s.handleAPIFacts)))
+	mux.Handle("GET /api/v1/facts/all", s.requireAPIKey(http.HandlerFunc(s.handleAPIAllFacts)))
+	mux.Handle("GET /api/v1/facts/recent", s.requireAPIKey(http.HandlerFunc(s.handleAPIRecentFacts)))
 	mux.Handle("GET /api/v1/facts/random", s.requireAPIKey(http.HandlerFunc(s.handleAPIRandomFact)))
 
 	// All other routes — protected by session auth
