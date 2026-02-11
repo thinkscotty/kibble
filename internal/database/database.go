@@ -110,6 +110,51 @@ func (db *DB) migrate() error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`,
 		`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`,
+
+		// News / Updates feature
+		`CREATE TABLE IF NOT EXISTS news_topics (
+			id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+			name                     TEXT    NOT NULL,
+			description              TEXT    NOT NULL DEFAULT '',
+			display_order            INTEGER NOT NULL DEFAULT 0,
+			is_active                INTEGER NOT NULL DEFAULT 1,
+			stories_per_refresh      INTEGER NOT NULL DEFAULT 5,
+			refresh_interval_minutes INTEGER NOT NULL DEFAULT 120,
+			last_refreshed_at        TEXT,
+			created_at               TEXT    NOT NULL DEFAULT (datetime('now')),
+			updated_at               TEXT    NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE TABLE IF NOT EXISTS news_sources (
+			id             INTEGER PRIMARY KEY AUTOINCREMENT,
+			news_topic_id  INTEGER NOT NULL REFERENCES news_topics(id) ON DELETE CASCADE,
+			url            TEXT    NOT NULL,
+			name           TEXT    NOT NULL,
+			is_manual      INTEGER NOT NULL DEFAULT 0,
+			is_active      INTEGER NOT NULL DEFAULT 1,
+			failure_count  INTEGER NOT NULL DEFAULT 0,
+			last_error     TEXT    NOT NULL DEFAULT '',
+			created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_news_sources_topic ON news_sources(news_topic_id)`,
+		`CREATE TABLE IF NOT EXISTS stories (
+			id             INTEGER PRIMARY KEY AUTOINCREMENT,
+			news_topic_id  INTEGER NOT NULL REFERENCES news_topics(id) ON DELETE CASCADE,
+			title          TEXT    NOT NULL,
+			summary        TEXT    NOT NULL,
+			source_url     TEXT    NOT NULL DEFAULT '',
+			source_title   TEXT    NOT NULL DEFAULT '',
+			published_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+			created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_stories_topic ON stories(news_topic_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_stories_created ON stories(created_at DESC)`,
+		`CREATE TABLE IF NOT EXISTS news_refresh_status (
+			news_topic_id  INTEGER PRIMARY KEY REFERENCES news_topics(id) ON DELETE CASCADE,
+			last_refresh   TEXT,
+			next_refresh   TEXT,
+			status         TEXT    NOT NULL DEFAULT 'pending',
+			error_message  TEXT    NOT NULL DEFAULT ''
+		)`,
 	}
 
 	for _, stmt := range statements {
@@ -131,6 +176,10 @@ func (db *DB) seedSettings() error {
 		"card_columns":            "3",
 		"facts_per_topic_display": "5",
 		"similarity_threshold":    "0.6",
+		"news_sourcing_instructions":    "Find reliable, reputable news sources that provide regular updates. Include relevant Reddit subreddits when appropriate. Prefer sources with RSS feeds or well-structured HTML. Avoid paywalled content when possible.",
+		"news_summarizing_instructions": "Summarize the news story in a clear, informative tone. Focus on the key facts and why this story matters. Keep the summary between 75-150 words.",
+		"news_tone_instructions":        "",
+		"stories_per_topic_display":     "5",
 	}
 
 	stmt, err := db.conn.Prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`)

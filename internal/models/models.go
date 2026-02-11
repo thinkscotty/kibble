@@ -66,6 +66,60 @@ type TopicWithFacts struct {
 	Facts []Fact
 }
 
+type NewsTopic struct {
+	ID                     int64      `json:"id"`
+	Name                   string     `json:"name"`
+	Description            string     `json:"description"`
+	DisplayOrder           int        `json:"display_order"`
+	IsActive               bool       `json:"is_active"`
+	StoriesPerRefresh      int        `json:"stories_per_refresh"`
+	RefreshIntervalMinutes int        `json:"refresh_interval_minutes"`
+	LastRefreshedAt        *time.Time `json:"last_refreshed_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
+}
+
+type NewsSource struct {
+	ID           int64     `json:"id"`
+	NewsTopicID  int64     `json:"news_topic_id"`
+	URL          string    `json:"url"`
+	Name         string    `json:"name"`
+	IsManual     bool      `json:"is_manual"`
+	IsActive     bool      `json:"is_active"`
+	FailureCount int       `json:"failure_count"`
+	LastError    string    `json:"last_error"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type Story struct {
+	ID          int64     `json:"id"`
+	NewsTopicID int64     `json:"news_topic_id"`
+	Title       string    `json:"title"`
+	Summary     string    `json:"summary"`
+	SourceURL   string    `json:"source_url"`
+	SourceTitle string    `json:"source_title"`
+	PublishedAt time.Time `json:"published_at"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type NewsTopicWithStories struct {
+	NewsTopic NewsTopic
+	Stories   []Story
+}
+
+type NewsTopicWithSources struct {
+	NewsTopic NewsTopic
+	Sources   []NewsSource
+}
+
+type NewsRefreshStatus struct {
+	NewsTopicID  int64     `json:"news_topic_id"`
+	LastRefresh  time.Time `json:"last_refresh"`
+	NextRefresh  time.Time `json:"next_refresh"`
+	Status       string    `json:"status"`
+	ErrorMessage string    `json:"error_message,omitempty"`
+}
+
 type Stats struct {
 	TotalTopics      int   `json:"total_topics"`
 	ActiveTopics     int   `json:"active_topics"`

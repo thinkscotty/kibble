@@ -17,6 +17,7 @@ import (
 	"github.com/thinkscotty/kibble/internal/database"
 	"github.com/thinkscotty/kibble/internal/gemini"
 	"github.com/thinkscotty/kibble/internal/scheduler"
+	"github.com/thinkscotty/kibble/internal/scraper"
 	"github.com/thinkscotty/kibble/internal/server"
 	"github.com/thinkscotty/kibble/internal/similarity"
 )
@@ -81,7 +82,8 @@ func main() {
 	// Initialize services
 	geminiClient := gemini.NewClient(db)
 	sim := similarity.New(cfg.Similarity.Threshold, cfg.Similarity.NGramSize)
-	sched := scheduler.New(db, geminiClient, sim)
+	sc := scraper.New()
+	sched := scheduler.New(db, geminiClient, sim, sc)
 
 	// Build HTTP server
 	srv := server.New(cfg, db, geminiClient, sim, sched, themes, version, buildTime)

@@ -33,9 +33,9 @@
         <div id="apikey-test-result"></div>
     </div>
 
-    <!-- AI Instructions -->
+    <!-- AI Instructions (Facts) -->
     <div class="card">
-        <h3 class="card-title">AI Instructions</h3>
+        <h3 class="card-title">Facts AI Instructions</h3>
         <div class="form-group">
             <label for="ai_custom_instructions">Custom Instructions</label>
             <p class="text-muted text-sm">Guide the AI on what kind of facts to generate (e.g., "Focus on lesser-known facts", "Include recent discoveries").</p>
@@ -49,6 +49,32 @@
             <textarea id="ai_tone_instructions" name="ai_tone_instructions"
                       class="form-input form-textarea" rows="3"
                       placeholder="Optional: Set the tone and style...">{{index .Settings "ai_tone_instructions"}}</textarea>
+        </div>
+    </div>
+
+    <!-- AI Instructions (Updates/Stories) -->
+    <div class="card">
+        <h3 class="card-title">Updates AI Instructions</h3>
+        <div class="form-group">
+            <label for="news_sourcing_instructions">Source Discovery Instructions</label>
+            <p class="text-muted text-sm">Guide the AI on what kinds of sources to find for news topics.</p>
+            <textarea id="news_sourcing_instructions" name="news_sourcing_instructions"
+                      class="form-input form-textarea" rows="3"
+                      placeholder="Optional: Guide source discovery...">{{index .Settings "news_sourcing_instructions"}}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="news_summarizing_instructions">Summarizing Instructions</label>
+            <p class="text-muted text-sm">Guide the AI on how to summarize news stories.</p>
+            <textarea id="news_summarizing_instructions" name="news_summarizing_instructions"
+                      class="form-input form-textarea" rows="3"
+                      placeholder="Optional: Guide story summarization...">{{index .Settings "news_summarizing_instructions"}}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="news_tone_instructions">Tone & Style</label>
+            <p class="text-muted text-sm">Set the tone, length, and style for summarized stories.</p>
+            <textarea id="news_tone_instructions" name="news_tone_instructions"
+                      class="form-input form-textarea" rows="3"
+                      placeholder="Optional: Set the tone and style for stories...">{{index .Settings "news_tone_instructions"}}</textarea>
         </div>
     </div>
 
@@ -92,6 +118,11 @@
                 <label for="facts_per_topic_display">Facts Per Topic</label>
                 <input type="number" id="facts_per_topic_display" name="facts_per_topic_display"
                        value="{{index .Settings "facts_per_topic_display"}}" min="1" max="50" class="form-input">
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="stories_per_topic_display">Stories Per Topic</label>
+                <input type="number" id="stories_per_topic_display" name="stories_per_topic_display"
+                       value="{{index .Settings "stories_per_topic_display"}}" min="1" max="50" class="form-input">
             </div>
             <div class="form-group form-group-sm">
                 <label for="similarity_threshold">Similarity Threshold</label>

@@ -1,0 +1,42 @@
+{{define "story_card"}}
+<div class="card story-card" id="story-card-{{.NewsTopic.ID}}">
+    <div class="card-header">
+        <h3 class="card-title">{{.NewsTopic.Name}}</h3>
+        <div class="card-actions">
+            <span class="badge badge-ai">Updates</span>
+            <button class="btn btn-sm btn-secondary"
+                    hx-post="/news-topics/{{.NewsTopic.ID}}/refresh"
+                    hx-target="#story-refresh-status-{{.NewsTopic.ID}}"
+                    hx-indicator="#story-refresh-spinner-{{.NewsTopic.ID}}">
+                Refresh
+            </button>
+            <span id="story-refresh-spinner-{{.NewsTopic.ID}}" class="htmx-indicator spinner"></span>
+        </div>
+    </div>
+    {{if .NewsTopic.Description}}
+    <p class="card-description">{{.NewsTopic.Description}}</p>
+    {{end}}
+    <div id="story-refresh-status-{{.NewsTopic.ID}}"></div>
+    <div class="stories-list">
+        {{if .Stories}}
+            {{range .Stories}}
+            <div class="story-item">
+                <h4 class="story-title">
+                    {{if .SourceURL}}
+                        <a href="{{.SourceURL}}" target="_blank" rel="noopener">{{.Title}}</a>
+                    {{else}}
+                        {{.Title}}
+                    {{end}}
+                </h4>
+                <p class="story-summary">{{.Summary}}</p>
+                {{if .SourceTitle}}
+                <p class="story-source text-muted text-sm">Source: {{.SourceTitle}}</p>
+                {{end}}
+            </div>
+            {{end}}
+        {{else}}
+            <p class="text-muted">No stories yet. Click Refresh to fetch some!</p>
+        {{end}}
+    </div>
+</div>
+{{end}}

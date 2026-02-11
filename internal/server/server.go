@@ -96,9 +96,15 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/facts/recent", s.requireAPIKey(http.HandlerFunc(s.handleAPIRecentFacts)))
 	mux.Handle("GET /api/v1/facts/random", s.requireAPIKey(http.HandlerFunc(s.handleAPIRandomFact)))
 
+	// Story API — protected by API key
+	mux.Handle("GET /api/v1/stories", s.requireAPIKey(http.HandlerFunc(s.handleAPIStories)))
+	mux.Handle("GET /api/v1/stories/recent", s.requireAPIKey(http.HandlerFunc(s.handleAPIStoriesRecent)))
+	mux.Handle("GET /api/v1/stories/random", s.requireAPIKey(http.HandlerFunc(s.handleAPIRandomStory)))
+
 	// All other routes — protected by session auth
 	mux.Handle("GET /{$}", s.requireAuth(http.HandlerFunc(s.handleDashboard)))
 	mux.Handle("GET /topics", s.requireAuth(http.HandlerFunc(s.handleTopicsPage)))
+	mux.Handle("GET /updates", s.requireAuth(http.HandlerFunc(s.handleUpdatesPage)))
 	mux.Handle("GET /settings", s.requireAuth(http.HandlerFunc(s.handleSettingsPage)))
 	mux.Handle("GET /stats", s.requireAuth(http.HandlerFunc(s.handleStatsPage)))
 
@@ -115,6 +121,19 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.Handle("PUT /facts/{id}", s.requireAuth(http.HandlerFunc(s.handleFactUpdate)))
 	mux.Handle("DELETE /facts/{id}", s.requireAuth(http.HandlerFunc(s.handleFactDelete)))
 	mux.Handle("GET /facts/search", s.requireAuth(http.HandlerFunc(s.handleFactSearch)))
+
+	// News topic CRUD
+	mux.Handle("POST /news-topics", s.requireAuth(http.HandlerFunc(s.handleNewsTopicCreate)))
+	mux.Handle("GET /news-topics/{id}/edit", s.requireAuth(http.HandlerFunc(s.handleNewsTopicEditForm)))
+	mux.Handle("PUT /news-topics/{id}", s.requireAuth(http.HandlerFunc(s.handleNewsTopicUpdate)))
+	mux.Handle("DELETE /news-topics/{id}", s.requireAuth(http.HandlerFunc(s.handleNewsTopicDelete)))
+	mux.Handle("PATCH /news-topics/{id}/toggle", s.requireAuth(http.HandlerFunc(s.handleNewsTopicToggle)))
+	mux.Handle("POST /news-topics/{id}/refresh", s.requireAuth(http.HandlerFunc(s.handleNewsTopicRefresh)))
+	mux.Handle("POST /news-topics/{id}/discover", s.requireAuth(http.HandlerFunc(s.handleNewsTopicDiscover)))
+
+	// Source management
+	mux.Handle("POST /news-topics/{id}/sources", s.requireAuth(http.HandlerFunc(s.handleNewsSourceAdd)))
+	mux.Handle("DELETE /sources/{id}", s.requireAuth(http.HandlerFunc(s.handleNewsSourceDelete)))
 
 	mux.Handle("POST /settings", s.requireAuth(http.HandlerFunc(s.handleSettingsUpdate)))
 	mux.Handle("POST /settings/apikey/test", s.requireAuth(http.HandlerFunc(s.handleAPIKeyTest)))
@@ -173,7 +192,7 @@ func (s *Server) loadTemplates() error {
 
 	s.pages = make(map[string]*template.Template)
 
-	pageNames := []string{"dashboard", "topics", "settings", "stats", "login", "setup"}
+	pageNames := []string{"dashboard", "topics", "updates", "settings", "stats", "login", "setup"}
 	for _, page := range pageNames {
 		t, err := template.New("base.html").Funcs(funcMap).ParseFS(kibble.TemplateFS,
 			"web/templates/layouts/base.html",

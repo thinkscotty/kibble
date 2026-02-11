@@ -5,12 +5,22 @@
     <h1>Dashboard</h1>
 </div>
 
-{{if .Topics}}
-<div class="dashboard-grid">
-    {{range .Topics}}
-        {{template "topic_card" .}}
+{{if or .Topics .NewsTopics}}
+    {{if .Topics}}
+    <div class="dashboard-grid">
+        {{range .Topics}}
+            {{template "topic_card" .}}
+        {{end}}
+    </div>
     {{end}}
-</div>
+
+    {{if .NewsTopics}}
+    <div class="dashboard-grid" style="margin-top: 1rem;">
+        {{range .NewsTopics}}
+            {{template "story_card" .}}
+        {{end}}
+    </div>
+    {{end}}
 {{else}}
 <div class="empty-state">
     <h2>Welcome to Kibble!</h2>

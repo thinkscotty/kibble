@@ -195,6 +195,140 @@ func (s *Server) handleAPIRandomFact(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, map[string]any{"fact": chosen})
 }
 
+func (s *Server) handleAPIStories(w http.ResponseWriter, r *http.Request) {
+	newsTopics, err := s.db.ListActiveNewsTopics()
+	if err != nil || len(newsTopics) == 0 {
+		jsonError(w, "No active news topics found", 404)
+		return
+	}
+
+	type storyResp struct {
+		ID          int64  `json:"id"`
+		Title       string `json:"title"`
+		Summary     string `json:"summary"`
+		SourceURL   string `json:"source_url"`
+		SourceTitle string `json:"source_title"`
+	}
+	type topicStories struct {
+		TopicID   int64       `json:"topic_id"`
+		TopicName string      `json:"topic_name"`
+		Stories   []storyResp `json:"stories"`
+	}
+
+	var result []topicStories
+	for _, nt := range newsTopics {
+		stories, err := s.db.ListStoriesByNewsTopic(nt.ID, 100000)
+		if err != nil {
+			slog.Error("API: failed to list stories", "topic_id", nt.ID, "error", err)
+			continue
+		}
+		var sl []storyResp
+		for _, st := range stories {
+			sl = append(sl, storyResp{
+				ID:          st.ID,
+				Title:       st.Title,
+				Summary:     st.Summary,
+				SourceURL:   st.SourceURL,
+				SourceTitle: st.SourceTitle,
+			})
+		}
+		result = append(result, topicStories{
+			TopicID:   nt.ID,
+			TopicName: nt.Name,
+			Stories:   sl,
+		})
+	}
+
+	jsonResponse(w, map[string]any{"topics": result})
+}
+
+func (s *Server) handleAPIStoriesRecent(w http.ResponseWriter, r *http.Request) {
+	newsTopics, err := s.db.ListActiveNewsTopics()
+	if err != nil || len(newsTopics) == 0 {
+		jsonError(w, "No active news topics found", 404)
+		return
+	}
+
+	type storyResp struct {
+		ID          int64  `json:"id"`
+		Title       string `json:"title"`
+		Summary     string `json:"summary"`
+		SourceURL   string `json:"source_url"`
+		SourceTitle string `json:"source_title"`
+	}
+	type topicStories struct {
+		TopicID   int64       `json:"topic_id"`
+		TopicName string      `json:"topic_name"`
+		Stories   []storyResp `json:"stories"`
+	}
+
+	var result []topicStories
+	for _, nt := range newsTopics {
+		stories, err := s.db.ListStoriesByNewsTopic(nt.ID, 100)
+		if err != nil {
+			slog.Error("API: failed to list stories", "topic_id", nt.ID, "error", err)
+			continue
+		}
+		var sl []storyResp
+		for _, st := range stories {
+			sl = append(sl, storyResp{
+				ID:          st.ID,
+				Title:       st.Title,
+				Summary:     st.Summary,
+				SourceURL:   st.SourceURL,
+				SourceTitle: st.SourceTitle,
+			})
+		}
+		result = append(result, topicStories{
+			TopicID:   nt.ID,
+			TopicName: nt.Name,
+			Stories:   sl,
+		})
+	}
+
+	jsonResponse(w, map[string]any{"topics": result})
+}
+
+func (s *Server) handleAPIRandomStory(w http.ResponseWriter, r *http.Request) {
+	newsTopics, err := s.db.ListActiveNewsTopics()
+	if err != nil || len(newsTopics) == 0 {
+		jsonError(w, "No active news topics found", 404)
+		return
+	}
+
+	type storyWithTopic struct {
+		ID          int64  `json:"id"`
+		Topic       string `json:"topic"`
+		Title       string `json:"title"`
+		Summary     string `json:"summary"`
+		SourceURL   string `json:"source_url"`
+		SourceTitle string `json:"source_title"`
+	}
+
+	var allStories []storyWithTopic
+	for _, nt := range newsTopics {
+		stories, _ := s.db.ListStoriesByNewsTopic(nt.ID, 100)
+		for _, st := range stories {
+			allStories = append(allStories, storyWithTopic{
+				ID:          st.ID,
+				Topic:       nt.Name,
+				Title:       st.Title,
+				Summary:     st.Summary,
+				SourceURL:   st.SourceURL,
+				SourceTitle: st.SourceTitle,
+			})
+		}
+	}
+
+	if len(allStories) == 0 {
+		jsonError(w, "No stories available", 404)
+		return
+	}
+
+	chosen := allStories[rand.Intn(len(allStories))]
+	jsonResponse(w, map[string]any{"story": chosen})
+}
+
 func jsonResponse(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)

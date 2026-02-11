@@ -1,0 +1,78 @@
+{{define "title"}}Updates{{end}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1>Updates</h1>
+</div>
+
+<!-- Add News Topic Form -->
+<div class="card">
+    <h3 class="card-title">Add News Topic</h3>
+    <form hx-post="/news-topics" hx-target="#news-topic-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nt-name">Topic Name</label>
+                <input type="text" id="nt-name" name="name" placeholder="e.g., AI Research, Go Programming" required class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="nt-description">Description</label>
+                <input type="text" id="nt-description" name="description" placeholder="Brief description to guide source discovery" class="form-input">
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="nt-stories">Stories/Refresh</label>
+                <input type="number" id="nt-stories" name="stories_per_refresh" value="5" min="1" max="20" class="form-input">
+            </div>
+            <div class="form-group form-group-sm">
+                <label for="nt-interval">Interval (min)</label>
+                <input type="number" id="nt-interval" name="refresh_interval_minutes" value="120" min="1" class="form-input">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Add News Topic</button>
+    </form>
+</div>
+
+<!-- News Topic List -->
+<div class="card">
+    <h3 class="card-title">Your News Topics</h3>
+    <div id="news-topic-list">
+        {{if .NewsTopics}}
+            {{range .NewsTopics}}
+                {{template "news_topic_row" .}}
+            {{end}}
+        {{else}}
+            <p class="text-muted" id="no-news-topics-msg">No news topics yet. Add one above!</p>
+        {{end}}
+    </div>
+</div>
+
+<!-- Updates AI Settings -->
+<div class="card">
+    <h3 class="card-title">Updates AI Settings</h3>
+    <form hx-post="/settings" hx-target="body" hx-swap="outerHTML" hx-push-url="false">
+        <div class="form-group">
+            <label for="news_sourcing_instructions">Source Discovery Instructions</label>
+            <p class="text-muted text-sm">Guide the AI on what kinds of sources to find for news topics.</p>
+            <textarea id="news_sourcing_instructions" name="news_sourcing_instructions"
+                      class="form-input form-textarea" rows="3"
+                      placeholder="Optional: Guide source discovery...">{{index .Settings "news_sourcing_instructions"}}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="news_summarizing_instructions">Summarizing Instructions</label>
+            <p class="text-muted text-sm">Guide the AI on how to summarize news stories.</p>
+            <textarea id="news_summarizing_instructions" name="news_summarizing_instructions"
+                      class="form-input form-textarea" rows="3"
+                      placeholder="Optional: Guide story summarization...">{{index .Settings "news_summarizing_instructions"}}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="news_tone_instructions">Tone & Style</label>
+            <p class="text-muted text-sm">Set the tone, length, and style for summarized stories.</p>
+            <textarea id="news_tone_instructions" name="news_tone_instructions"
+                      class="form-input form-textarea" rows="3"
+                      placeholder="Optional: Set the tone and style for stories...">{{index .Settings "news_tone_instructions"}}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save AI Settings</button>
+        </div>
+    </form>
+</div>
+{{end}}

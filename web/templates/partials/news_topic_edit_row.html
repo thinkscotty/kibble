@@ -1,0 +1,35 @@
+{{define "news_topic_edit_row"}}
+<div class="news-topic-row" id="news-topic-row-{{.ID}}">
+    <div class="topic-row topic-edit-row">
+        <form hx-put="/news-topics/{{.ID}}" hx-target="#news-topic-row-{{.ID}}" hx-swap="outerHTML" class="topic-edit-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" name="name" value="{{.Name}}" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" name="description" value="{{.Description}}" class="form-input">
+                </div>
+                <div class="form-group form-group-sm">
+                    <label>Stories/Refresh</label>
+                    <input type="number" name="stories_per_refresh" value="{{.StoriesPerRefresh}}" min="1" max="20" class="form-input">
+                </div>
+                <div class="form-group form-group-sm">
+                    <label>Interval (min)</label>
+                    <input type="number" name="refresh_interval_minutes" value="{{.RefreshIntervalMinutes}}" min="1" class="form-input">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                <button type="button" class="btn btn-sm btn-secondary"
+                        hx-get="/updates"
+                        hx-target="body"
+                        hx-push-url="true">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}

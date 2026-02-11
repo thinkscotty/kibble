@@ -1,0 +1,115 @@
+{{define "news_topic_row"}}
+<div class="news-topic-row" id="news-topic-row-{{.NewsTopic.ID}}">
+    <div class="topic-row">
+        <div class="topic-info">
+            <span class="topic-name">{{.NewsTopic.Name}}</span>
+            <span class="topic-description text-muted">{{.NewsTopic.Description}}</span>
+        </div>
+        <div class="topic-meta">
+            <span class="badge {{if .NewsTopic.IsActive}}badge-active{{else}}badge-inactive{{end}}">
+                {{if .NewsTopic.IsActive}}Active{{else}}Inactive{{end}}
+            </span>
+            <span class="text-muted text-sm">{{.NewsTopic.StoriesPerRefresh}} stories / {{.NewsTopic.RefreshIntervalMinutes}}min</span>
+            <span class="text-muted text-sm">Last: {{timeAgo .NewsTopic.LastRefreshedAt}}</span>
+        </div>
+        <div class="topic-actions">
+            <button class="btn btn-sm btn-primary"
+                    hx-patch="/news-topics/{{.NewsTopic.ID}}/toggle"
+                    hx-target="#news-topic-row-{{.NewsTopic.ID}}"
+                    hx-swap="outerHTML"
+                    hx-vals='{"active": "{{if .NewsTopic.IsActive}}false{{else}}true{{end}}"}'>
+                {{if .NewsTopic.IsActive}}Disable{{else}}Enable{{end}}
+            </button>
+            <button class="btn btn-sm btn-secondary"
+                    hx-get="/news-topics/{{.NewsTopic.ID}}/edit"
+                    hx-target="#news-topic-row-{{.NewsTopic.ID}}"
+                    hx-swap="outerHTML">
+                Edit
+            </button>
+            <button class="btn btn-sm btn-secondary"
+                    hx-post="/news-topics/{{.NewsTopic.ID}}/refresh"
+                    hx-target="#refresh-status-{{.NewsTopic.ID}}"
+                    hx-indicator="#refresh-spinner-nt-{{.NewsTopic.ID}}">
+                Refresh
+            </button>
+            <span id="refresh-spinner-nt-{{.NewsTopic.ID}}" class="htmx-indicator spinner"></span>
+            <button class="btn btn-sm btn-secondary"
+                    hx-post="/news-topics/{{.NewsTopic.ID}}/discover"
+                    hx-target="#news-topic-row-{{.NewsTopic.ID}}"
+                    hx-swap="outerHTML"
+                    hx-indicator="#discover-spinner-{{.NewsTopic.ID}}">
+                Re-discover Sources
+            </button>
+            <span id="discover-spinner-{{.NewsTopic.ID}}" class="htmx-indicator spinner"></span>
+            <button class="btn btn-sm btn-danger"
+                    hx-delete="/news-topics/{{.NewsTopic.ID}}"
+                    hx-target="#news-topic-row-{{.NewsTopic.ID}}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Delete this news topic, its sources, and all stories?">
+                Delete
+            </button>
+        </div>
+    </div>
+    <div id="refresh-status-{{.NewsTopic.ID}}"></div>
+
+    <!-- Sources Section -->
+    <div class="sources-section">
+        <div class="sources-header">
+            <h4 class="sources-title">Sources ({{len .Sources}})</h4>
+        </div>
+        {{if .Sources}}
+        <div class="sources-list">
+            {{range .Sources}}
+            <div class="source-item" id="source-{{.ID}}">
+                <div class="source-info">
+                    <span class="source-name">{{.Name}}</span>
+                    <a href="{{.URL}}" target="_blank" rel="noopener" class="source-url text-muted text-sm">{{.URL}}</a>
+                </div>
+                <div class="source-meta">
+                    {{if .IsManual}}
+                        <span class="badge badge-custom">Manual</span>
+                    {{else}}
+                        <span class="badge badge-ai">AI</span>
+                    {{end}}
+                    {{if not .IsActive}}
+                        <span class="badge badge-error">Disabled</span>
+                    {{end}}
+                    {{if gt .FailureCount 0}}
+                        <span class="text-error text-sm">{{.FailureCount}} failures</span>
+                    {{end}}
+                </div>
+                <button class="btn btn-sm btn-danger"
+                        hx-delete="/sources/{{.ID}}"
+                        hx-target="#source-{{.ID}}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Remove this source?">
+                    Remove
+                </button>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <p class="text-muted text-sm">No sources yet. Sources will be auto-discovered, or add one manually below.</p>
+        {{end}}
+
+        <!-- Add Source Form -->
+        <form class="add-source-form"
+              hx-post="/news-topics/{{.NewsTopic.ID}}/sources"
+              hx-target="#news-topic-row-{{.NewsTopic.ID}}"
+              hx-swap="outerHTML"
+              hx-on::after-request="if(event.detail.successful) this.reset()">
+            <div class="form-row">
+                <div class="form-group">
+                    <input type="url" name="url" placeholder="https://example.com/feed" required class="form-input">
+                </div>
+                <div class="form-group form-group-sm">
+                    <input type="text" name="name" placeholder="Source name" class="form-input">
+                </div>
+                <div class="form-group form-group-sm" style="flex: 0 0 auto; min-width: auto;">
+                    <button type="submit" class="btn btn-sm btn-secondary">Add Source</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}

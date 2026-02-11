@@ -36,3 +36,24 @@ type UsageMetadata struct {
 	CandidatesTokenCount int `json:"candidatesTokenCount"`
 	TotalTokenCount      int `json:"totalTokenCount"`
 }
+
+// --- News / Updates types ---
+
+type DiscoveredSource struct {
+	URL         string `json:"url"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type SummarizedStory struct {
+	Title       string `json:"title"`
+	Summary     string `json:"summary"`
+	SourceURL   string `json:"source_url"`
+	SourceTitle string `json:"source_title"`
+}
+
+type ScrapedContent struct {
+	URL        string
+	SourceName string
+	Content    string
+}

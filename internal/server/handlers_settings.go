@@ -50,10 +50,14 @@ func (s *Server) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		"gemini_api_key",
 		"ai_custom_instructions",
 		"ai_tone_instructions",
+		"news_sourcing_instructions",
+		"news_summarizing_instructions",
+		"news_tone_instructions",
 		"theme_mode",
 		"text_size",
 		"card_columns",
 		"facts_per_topic_display",
+		"stories_per_topic_display",
 		"similarity_threshold",
 	}
 
