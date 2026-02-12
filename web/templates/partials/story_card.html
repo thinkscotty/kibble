@@ -3,7 +3,7 @@
     <div class="card-header">
         <h3 class="card-title">{{.NewsTopic.Name}}</h3>
         <div class="card-actions">
-            <span class="badge badge-ai">Updates</span>
+            <span class="badge badge-ai">News</span>
             <button class="btn btn-sm btn-secondary"
                     hx-post="/news-topics/{{.NewsTopic.ID}}/refresh"
                     hx-target="#story-refresh-status-{{.NewsTopic.ID}}"

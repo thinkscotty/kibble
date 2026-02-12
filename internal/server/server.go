@@ -104,7 +104,7 @@ func (s *Server) routes(mux *http.ServeMux) {
 	// All other routes — protected by session auth
 	mux.Handle("GET /{$}", s.requireAuth(http.HandlerFunc(s.handleDashboard)))
 	mux.Handle("GET /topics", s.requireAuth(http.HandlerFunc(s.handleTopicsPage)))
-	mux.Handle("GET /updates", s.requireAuth(http.HandlerFunc(s.handleUpdatesPage)))
+	mux.Handle("GET /news", s.requireAuth(http.HandlerFunc(s.handleNewsPage)))
 	mux.Handle("GET /settings", s.requireAuth(http.HandlerFunc(s.handleSettingsPage)))
 	mux.Handle("GET /stats", s.requireAuth(http.HandlerFunc(s.handleStatsPage)))
 
@@ -192,7 +192,7 @@ func (s *Server) loadTemplates() error {
 
 	s.pages = make(map[string]*template.Template)
 
-	pageNames := []string{"dashboard", "topics", "updates", "settings", "stats", "login", "setup"}
+	pageNames := []string{"dashboard", "topics", "news", "settings", "stats", "login", "setup"}
 	for _, page := range pageNames {
 		t, err := template.New("base.html").Funcs(funcMap).ParseFS(kibble.TemplateFS,
 			"web/templates/layouts/base.html",

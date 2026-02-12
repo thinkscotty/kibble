@@ -62,6 +62,19 @@ themes:
       primary: "#EE8434"
       accent: "#8E443D"
       text: "#FFFFFF"
+    
+  - id: greenies
+    name: Greenies
+    scheme: light
+    logo: light
+    colors:
+      background: "#FDF4ED"
+      surface: "#FDF4ED"
+      navbar: "#67825E"
+      navbar_text: "FDF4ED"
+      primary: "#CF5C36"
+      accent: "#56282D"
+      text: "#1F271B"     
       
   - id: coffee-mate
     name: Coffee Mate

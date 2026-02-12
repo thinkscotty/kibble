@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/thinkscotty/kibble/internal/feeds"
 )
 
 // DiscoverSources uses AI to find relevant web sources for a news topic.
@@ -17,7 +19,8 @@ func (c *Client) DiscoverSources(ctx context.Context, topicName, description, so
 		return nil, 0, fmt.Errorf("gemini API key not configured — set it in Settings")
 	}
 
-	prompt := buildDiscoverPrompt(topicName, description, sourcingInstructions)
+	suggested := feeds.FindRelevant(topicName, description)
+	prompt := buildDiscoverPrompt(topicName, description, sourcingInstructions, suggested)
 
 	reqBody := GenerateRequest{
 		Contents: []Content{{
@@ -156,7 +159,7 @@ func (c *Client) SummarizeContent(ctx context.Context, topicName string, scraped
 	return stories, tokensUsed, nil
 }
 
-func buildDiscoverPrompt(topicName, description, sourcingInstructions string) string {
+func buildDiscoverPrompt(topicName, description, sourcingInstructions string, suggestedFeeds []feeds.Feed) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf(`You are a helpful assistant that discovers reliable web sources for news topics.
@@ -169,6 +172,14 @@ Description: %s
 	if sourcingInstructions != "" {
 		sb.WriteString(sourcingInstructions)
 		sb.WriteString("\n\n")
+	}
+
+	if len(suggestedFeeds) > 0 {
+		sb.WriteString("Here are known-good RSS feeds that may be relevant to this topic. PREFER these feeds when they match the topic well, as they are verified to work:\n\n")
+		for _, f := range suggestedFeeds {
+			sb.WriteString(fmt.Sprintf("- %s (%s)\n", f.Name, f.URL))
+		}
+		sb.WriteString("\nYou may include additional sources beyond this list if needed to cover the topic well.\n\n")
 	}
 
 	sb.WriteString(`Find 4-8 reliable sources that provide ongoing news and updates related to this topic. Sources can include:

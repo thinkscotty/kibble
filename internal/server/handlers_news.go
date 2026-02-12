@@ -10,7 +10,7 @@ import (
 	"github.com/thinkscotty/kibble/internal/scraper"
 )
 
-func (s *Server) handleUpdatesPage(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleNewsPage(w http.ResponseWriter, r *http.Request) {
 	newsTopics, err := s.db.ListNewsTopics()
 	if err != nil {
 		slog.Error("Failed to list news topics", "error", err)
@@ -30,11 +30,11 @@ func (s *Server) handleUpdatesPage(w http.ResponseWriter, r *http.Request) {
 	settings, _ := s.db.GetAllSettings()
 
 	data := map[string]any{
-		"Page":       "updates",
+		"Page":       "news",
 		"NewsTopics": topicsWithSources,
 		"Settings":   settings,
 	}
-	s.render(w, "updates", data)
+	s.render(w, "news", data)
 }
 
 func (s *Server) handleNewsTopicCreate(w http.ResponseWriter, r *http.Request) {
