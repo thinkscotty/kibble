@@ -35,8 +35,7 @@ themes:
       accent: "#FF674D"
       text: "#25283D"
       logo_color: "#FFF9EB"
-      
-themes:
+
   - id: kibble-dark
     name: Kibble Dark
     scheme: dark
