@@ -27,28 +27,28 @@ themes:
     scheme: light
     logo: light
     colors:
-      background: "#FFF9EB"
-      surface: "#FFF9EB"
-      navbar: "#25283D"
-      navbar_text: "#FFF9EB"
-      primary: "#77B6EA"
-      accent: "#FF674D"
-      text: "#25283D"
-      logo_color: "#FFF9EB"
+      background: "#FDF4ED"
+      surface: "#FDF4ED"
+      navbar: "#449DD1"
+      navbar_text: "#FDF4ED"
+      primary: "#FF7F11"
+      accent: "#594236"
+      text: "#102F42"
+      logo_color: "#FDF4ED"
 
   - id: kibble-dark
     name: Kibble Dark
     scheme: dark
     logo: light
     colors:
-      background: "#25283D"
-      surface: "#25283D"
-      navbar: "#FFF9EB"
-      navbar_text: "#FFF9EB"
-      primary: "#FF674D"
-      accent: "#77B6EA"
-      text: "#FFF9EB"
-      logo_color: "#FFF9EB"
+      background: "#0C2331"
+      surface: "#0C2331"
+      navbar: "#102F42"
+      navbar_text: "#FDF4ED"
+      primary: "#FF7F11"
+      accent: "#449DD1"
+      text: "#FDF4ED"
+      logo_color: "#FDF4ED"
 
   - id: soft-dark
     name: Soft Dark
