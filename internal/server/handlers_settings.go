@@ -1,12 +1,12 @@
 package server
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
+
+	"github.com/thinkscotty/kibble/internal/apikey"
 )
 
 func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
@@ -103,13 +103,12 @@ func (s *Server) handleAPIKeyTest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAPIKeyRegenerate(w http.ResponseWriter, r *http.Request) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
+	newKey, err := apikey.Generate()
+	if err != nil {
 		slog.Error("Failed to generate API key", "error", err)
 		http.Error(w, "Failed to generate key", 500)
 		return
 	}
-	newKey := base64.RawURLEncoding.EncodeToString(b)
 
 	if err := s.db.SetSetting("api_key", newKey); err != nil {
 		slog.Error("Failed to save API key", "error", err)

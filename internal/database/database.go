@@ -1,13 +1,12 @@
 package database
 
 import (
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/thinkscotty/kibble/internal/apikey"
 	_ "modernc.org/sqlite"
 )
 
@@ -198,12 +197,11 @@ func (db *DB) seedSettings() error {
 	var apiKeyExists int
 	db.conn.QueryRow(`SELECT COUNT(*) FROM settings WHERE key = 'api_key'`).Scan(&apiKeyExists)
 	if apiKeyExists == 0 {
-		b := make([]byte, 32)
-		if _, err := rand.Read(b); err != nil {
+		key, err := apikey.Generate()
+		if err != nil {
 			return fmt.Errorf("generate api key: %w", err)
 		}
-		apiKey := base64.RawURLEncoding.EncodeToString(b)
-		if _, err := db.conn.Exec(`INSERT OR IGNORE INTO settings (key, value) VALUES ('api_key', ?)`, apiKey); err != nil {
+		if _, err := db.conn.Exec(`INSERT OR IGNORE INTO settings (key, value) VALUES ('api_key', ?)`, key); err != nil {
 			return err
 		}
 	}
