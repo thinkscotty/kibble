@@ -68,6 +68,13 @@ func (db *DB) GetStats() (models.Stats, error) {
 	db.conn.QueryRow(`SELECT COALESCE(SUM(tokens_used), 0) FROM api_usage_log`).Scan(&s.TotalTokensUsed)
 	db.conn.QueryRow(`SELECT COALESCE(SUM(facts_discarded), 0) FROM api_usage_log`).Scan(&s.FactsDiscarded)
 
+	// News / Updates stats
+	db.conn.QueryRow(`SELECT COUNT(*) FROM news_topics`).Scan(&s.TotalNewsTopics)
+	db.conn.QueryRow(`SELECT COUNT(*) FROM news_topics WHERE is_active = 1`).Scan(&s.ActiveNewsTopics)
+	db.conn.QueryRow(`SELECT COUNT(*) FROM stories`).Scan(&s.TotalStories)
+	db.conn.QueryRow(`SELECT COUNT(*) FROM news_sources`).Scan(&s.TotalNewsSources)
+	db.conn.QueryRow(`SELECT COUNT(*) FROM news_sources WHERE is_active = 1`).Scan(&s.ActiveNewsSources)
+
 	size, _ := db.DatabaseSizeBytes()
 	s.DatabaseSizeBytes = size
 

@@ -228,29 +228,44 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 
 	scrapeResults := s.scraper.ScrapeSources(scrapeCtx, sources)
 
-	// Process results and update source statuses
+	// Process results and update source statuses.
+	// Failure count increments on each failed refresh and decrements by 1
+	// on each success (min 0). This lets occasional failures be forgiven
+	// while chronically bad sources accumulate toward the removal threshold.
 	var scrapedContent []gemini.ScrapedContent
+	var removedSourceCount int
 	for _, result := range scrapeResults {
 		if result.Error != nil {
 			newFailureCount := result.Source.FailureCount + 1
-			isActive := newFailureCount < 3
 
 			errMsg := result.Error.Error()
 			if len(errMsg) > 500 {
 				errMsg = errMsg[:500]
 			}
 
-			s.db.UpdateNewsSourceStatus(result.Source.ID, isActive, newFailureCount, errMsg)
-			if !isActive {
-				slog.Warn("News source disabled after failures", "url", result.Source.URL, "failures", newFailureCount)
+			if newFailureCount >= 3 {
+				// Auto-remove source after accumulating 3 failures across refreshes
+				s.db.DeleteNewsSource(result.Source.ID)
+				removedSourceCount++
+				slog.Warn("Auto-removed failing news source",
+					"url", result.Source.URL, "name", result.Source.Name,
+					"failures", newFailureCount, "topic_id", newsTopicID)
+			} else {
+				s.db.UpdateNewsSourceStatus(result.Source.ID, true, newFailureCount, errMsg)
 			}
 		} else {
-			// Reset failure count on success
+			// Decrement failure count by 1 on success (min 0) so that
+			// occasional failures are forgiven over time
 			if result.Source.FailureCount > 0 {
-				s.db.UpdateNewsSourceStatus(result.Source.ID, true, 0, "")
+				s.db.UpdateNewsSourceStatus(result.Source.ID, true, result.Source.FailureCount-1, "")
 			}
 			scrapedContent = append(scrapedContent, *result.Content)
 		}
+	}
+
+	// Discover replacement sources for any that were auto-removed
+	if removedSourceCount > 0 {
+		s.replaceRemovedSources(ctx, newsTopicID, removedSourceCount)
 	}
 
 	if len(scrapedContent) == 0 {
@@ -328,6 +343,51 @@ func (s *Scheduler) discoverNewsSources(ctx context.Context, newsTopicID int64) 
 
 	slog.Info("Discovered news sources", "topic", topic.Name, "count", len(sources))
 	return nil
+}
+
+// replaceRemovedSources discovers new sources to replace ones that were auto-removed due to failures.
+func (s *Scheduler) replaceRemovedSources(ctx context.Context, newsTopicID int64, count int) {
+	topic, err := s.db.GetNewsTopic(newsTopicID)
+	if err != nil {
+		slog.Error("Failed to get topic for source replacement", "topic_id", newsTopicID, "error", err)
+		return
+	}
+
+	sourcingInstr, _ := s.db.GetSetting("news_sourcing_instructions")
+
+	// Collect existing source URLs to avoid duplicates
+	existingSources, _ := s.db.GetSourcesForNewsTopic(newsTopicID)
+	existingURLs := make(map[string]bool, len(existingSources))
+	for _, src := range existingSources {
+		existingURLs[src.URL] = true
+	}
+
+	discovered, _, err := s.gemini.DiscoverSources(ctx, topic.Name, topic.Description, sourcingInstr)
+	if err != nil {
+		slog.Error("Failed to discover replacement sources", "topic", topic.Name, "error", err)
+		return
+	}
+
+	added := 0
+	for _, source := range discovered {
+		if added >= count {
+			break
+		}
+		if existingURLs[source.URL] {
+			continue
+		}
+		if err := scraper.ValidateURL(source.URL); err != nil {
+			continue
+		}
+		if _, err := s.db.AddNewsSource(newsTopicID, source.URL, source.Name, false); err != nil {
+			slog.Error("Failed to add replacement source", "error", err)
+			continue
+		}
+		added++
+		slog.Info("Added replacement news source", "topic", topic.Name, "url", source.URL)
+	}
+
+	slog.Info("Replaced removed sources", "topic", topic.Name, "removed", count, "replaced", added)
 }
 
 func (s *Scheduler) handleNewsRefreshError(newsTopicID int64, err error) {

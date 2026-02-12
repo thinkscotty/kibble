@@ -5,42 +5,80 @@
     <h1>Statistics</h1>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-value">{{.Stats.TotalTopics}}</div>
-        <div class="stat-label">Total Topics</div>
+<!-- Facts Stats -->
+<div class="card">
+    <h3 class="card-title">Facts</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.TotalTopics}}</div>
+            <div class="stat-label">Total Topics</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.ActiveTopics}}</div>
+            <div class="stat-label">Active Topics</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.TotalFacts}}</div>
+            <div class="stat-label">Total Facts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.AIGeneratedFacts}}</div>
+            <div class="stat-label">AI-Generated</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.CustomFacts}}</div>
+            <div class="stat-label">Custom Facts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.FactsDiscarded}}</div>
+            <div class="stat-label">Discarded (Similar)</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-value">{{.Stats.ActiveTopics}}</div>
-        <div class="stat-label">Active Topics</div>
+</div>
+
+<!-- Updates Stats -->
+<div class="card">
+    <h3 class="card-title">Updates</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.TotalNewsTopics}}</div>
+            <div class="stat-label">News Topics</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.ActiveNewsTopics}}</div>
+            <div class="stat-label">Active News Topics</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.TotalStories}}</div>
+            <div class="stat-label">Total Stories</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.TotalNewsSources}}</div>
+            <div class="stat-label">Total Sources</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.ActiveNewsSources}}</div>
+            <div class="stat-label">Active Sources</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-value">{{.Stats.TotalFacts}}</div>
-        <div class="stat-label">Total Facts</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{.Stats.AIGeneratedFacts}}</div>
-        <div class="stat-label">AI-Generated</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{.Stats.CustomFacts}}</div>
-        <div class="stat-label">Custom Facts</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{.Stats.FactsDiscarded}}</div>
-        <div class="stat-label">Discarded (Similar)</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{.Stats.TotalAPIRequests}}</div>
-        <div class="stat-label">API Requests</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{.Stats.TotalTokensUsed}}</div>
-        <div class="stat-label">Tokens Used</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{formatBytes .Stats.DatabaseSizeBytes}}</div>
-        <div class="stat-label">Database Size</div>
+</div>
+
+<!-- General Stats -->
+<div class="card">
+    <h3 class="card-title">General</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.TotalAPIRequests}}</div>
+            <div class="stat-label">API Requests</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{.Stats.TotalTokensUsed}}</div>
+            <div class="stat-label">Tokens Used</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{formatBytes .Stats.DatabaseSizeBytes}}</div>
+            <div class="stat-label">Database Size</div>
+        </div>
     </div>
 </div>
 

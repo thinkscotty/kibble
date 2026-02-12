@@ -121,13 +121,18 @@ type NewsRefreshStatus struct {
 }
 
 type Stats struct {
-	TotalTopics      int   `json:"total_topics"`
-	ActiveTopics     int   `json:"active_topics"`
-	TotalFacts       int   `json:"total_facts"`
-	CustomFacts      int   `json:"custom_facts"`
-	AIGeneratedFacts int   `json:"ai_generated_facts"`
-	TotalAPIRequests int   `json:"total_api_requests"`
-	TotalTokensUsed  int   `json:"total_tokens_used"`
-	FactsDiscarded   int   `json:"facts_discarded"`
+	TotalTopics       int   `json:"total_topics"`
+	ActiveTopics      int   `json:"active_topics"`
+	TotalFacts        int   `json:"total_facts"`
+	CustomFacts       int   `json:"custom_facts"`
+	AIGeneratedFacts  int   `json:"ai_generated_facts"`
+	TotalAPIRequests  int   `json:"total_api_requests"`
+	TotalTokensUsed   int   `json:"total_tokens_used"`
+	FactsDiscarded    int   `json:"facts_discarded"`
+	TotalNewsTopics   int   `json:"total_news_topics"`
+	ActiveNewsTopics  int   `json:"active_news_topics"`
+	TotalStories      int   `json:"total_stories"`
+	TotalNewsSources  int   `json:"total_news_sources"`
+	ActiveNewsSources int   `json:"active_news_sources"`
 	DatabaseSizeBytes int64 `json:"database_size_bytes"`
 }
