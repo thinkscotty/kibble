@@ -30,13 +30,13 @@ func NewClient(sg SettingsGetter) *Client {
 }
 
 // GenerateFacts calls the Gemini API and returns parsed facts and token count.
-func (c *Client) GenerateFacts(ctx context.Context, topic, description, customInstructions, toneInstructions string, count int) ([]string, int, error) {
+func (c *Client) GenerateFacts(ctx context.Context, topic, description, customInstructions, toneInstructions string, count, minWords, maxWords int) ([]string, int, error) {
 	apiKey, err := c.db.GetSetting("gemini_api_key")
 	if err != nil || apiKey == "" {
 		return nil, 0, fmt.Errorf("gemini API key not configured — set it in Settings")
 	}
 
-	prompt := BuildPrompt(topic, description, customInstructions, toneInstructions, count)
+	prompt := BuildPrompt(topic, description, customInstructions, toneInstructions, count, minWords, maxWords)
 
 	reqBody := GenerateRequest{
 		Contents: []Content{{

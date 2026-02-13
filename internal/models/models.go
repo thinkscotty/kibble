@@ -10,6 +10,8 @@ type Topic struct {
 	IsActive               bool       `json:"is_active"`
 	FactsPerRefresh        int        `json:"facts_per_refresh"`
 	RefreshIntervalMinutes int        `json:"refresh_interval_minutes"`
+	SummaryMinWords        int        `json:"summary_min_words"`
+	SummaryMaxWords        int        `json:"summary_max_words"`
 	LastRefreshedAt        *time.Time `json:"last_refreshed_at,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
@@ -74,6 +76,8 @@ type NewsTopic struct {
 	IsActive               bool       `json:"is_active"`
 	StoriesPerRefresh      int        `json:"stories_per_refresh"`
 	RefreshIntervalMinutes int        `json:"refresh_interval_minutes"`
+	SummaryMinWords        int        `json:"summary_min_words"`
+	SummaryMaxWords        int        `json:"summary_max_words"`
 	LastRefreshedAt        *time.Time `json:"last_refreshed_at,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`

@@ -19,6 +19,15 @@
                     <label>Interval (min)</label>
                     <input type="number" name="refresh_interval_minutes" value="{{.RefreshIntervalMinutes}}" min="1" class="form-input">
                 </div>
+                <div class="form-group form-group-sm">
+                    <label>Summary Length</label>
+                    <div class="range-input">
+                        <input type="number" name="summary_min_words" value="{{.SummaryMinWords}}" min="0" max="1000" class="form-input" placeholder="Min">
+                        <span>to</span>
+                        <input type="number" name="summary_max_words" value="{{.SummaryMaxWords}}" min="0" max="1000" class="form-input" placeholder="Max">
+                        <span>words</span>
+                    </div>
+                </div>
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-sm btn-primary">Save</button>

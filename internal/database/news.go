@@ -12,7 +12,8 @@ import (
 func (db *DB) ListNewsTopics() ([]models.NewsTopic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, stories_per_refresh,
-		       refresh_interval_minutes, last_refreshed_at, created_at, updated_at
+		       refresh_interval_minutes, summary_min_words, summary_max_words,
+		       last_refreshed_at, created_at, updated_at
 		FROM news_topics ORDER BY display_order ASC, id ASC`)
 	if err != nil {
 		return nil, err
@@ -24,7 +25,8 @@ func (db *DB) ListNewsTopics() ([]models.NewsTopic, error) {
 func (db *DB) ListActiveNewsTopics() ([]models.NewsTopic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, stories_per_refresh,
-		       refresh_interval_minutes, last_refreshed_at, created_at, updated_at
+		       refresh_interval_minutes, summary_min_words, summary_max_words,
+		       last_refreshed_at, created_at, updated_at
 		FROM news_topics WHERE is_active = 1 ORDER BY display_order ASC, id ASC`)
 	if err != nil {
 		return nil, err
@@ -40,10 +42,12 @@ func (db *DB) GetNewsTopic(id int64) (models.NewsTopic, error) {
 
 	err := db.conn.QueryRow(`
 		SELECT id, name, description, display_order, is_active, stories_per_refresh,
-		       refresh_interval_minutes, last_refreshed_at, created_at, updated_at
+		       refresh_interval_minutes, summary_min_words, summary_max_words,
+		       last_refreshed_at, created_at, updated_at
 		FROM news_topics WHERE id = ?`, id).Scan(
 		&t.ID, &t.Name, &t.Description, &t.DisplayOrder, &t.IsActive,
-		&t.StoriesPerRefresh, &t.RefreshIntervalMinutes, &lastRefreshed,
+		&t.StoriesPerRefresh, &t.RefreshIntervalMinutes,
+		&t.SummaryMinWords, &t.SummaryMaxWords, &lastRefreshed,
 		&createdAt, &updatedAt)
 	if err != nil {
 		return t, err
@@ -67,10 +71,11 @@ func (db *DB) CreateNewsTopic(t *models.NewsTopic) error {
 	}
 
 	result, err := db.conn.Exec(`
-		INSERT INTO news_topics (name, description, display_order, is_active, stories_per_refresh, refresh_interval_minutes)
-		VALUES (?, ?, ?, ?, ?, ?)`,
+		INSERT INTO news_topics (name, description, display_order, is_active, stories_per_refresh, refresh_interval_minutes, summary_min_words, summary_max_words)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		t.Name, t.Description, nextOrder, boolToInt(t.IsActive),
-		t.StoriesPerRefresh, t.RefreshIntervalMinutes)
+		t.StoriesPerRefresh, t.RefreshIntervalMinutes,
+		t.SummaryMinWords, t.SummaryMaxWords)
 	if err != nil {
 		return err
 	}
@@ -87,10 +92,12 @@ func (db *DB) UpdateNewsTopic(t *models.NewsTopic) error {
 	_, err := db.conn.Exec(`
 		UPDATE news_topics SET name = ?, description = ?, is_active = ?,
 		       stories_per_refresh = ?, refresh_interval_minutes = ?,
+		       summary_min_words = ?, summary_max_words = ?,
 		       updated_at = datetime('now')
 		WHERE id = ?`,
 		t.Name, t.Description, boolToInt(t.IsActive),
-		t.StoriesPerRefresh, t.RefreshIntervalMinutes, t.ID)
+		t.StoriesPerRefresh, t.RefreshIntervalMinutes,
+		t.SummaryMinWords, t.SummaryMaxWords, t.ID)
 	return err
 }
 
@@ -134,7 +141,8 @@ func (db *DB) UpdateNewsTopicRefreshTime(id int64) error {
 func (db *DB) NewsTopicsDueForRefresh() ([]models.NewsTopic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, stories_per_refresh,
-		       refresh_interval_minutes, last_refreshed_at, created_at, updated_at
+		       refresh_interval_minutes, summary_min_words, summary_max_words,
+		       last_refreshed_at, created_at, updated_at
 		FROM news_topics
 		WHERE is_active = 1
 		  AND (last_refreshed_at IS NULL
@@ -156,7 +164,8 @@ func scanNewsTopics(rows *sql.Rows) ([]models.NewsTopic, error) {
 
 		if err := rows.Scan(
 			&t.ID, &t.Name, &t.Description, &t.DisplayOrder, &t.IsActive,
-			&t.StoriesPerRefresh, &t.RefreshIntervalMinutes, &lastRefreshed,
+			&t.StoriesPerRefresh, &t.RefreshIntervalMinutes,
+			&t.SummaryMinWords, &t.SummaryMaxWords, &lastRefreshed,
 			&createdAt, &updatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan news topic: %w", err)

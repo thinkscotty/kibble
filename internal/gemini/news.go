@@ -85,7 +85,7 @@ func (c *Client) DiscoverSources(ctx context.Context, topicName, description, so
 }
 
 // SummarizeContent summarizes scraped content into news stories.
-func (c *Client) SummarizeContent(ctx context.Context, topicName string, scrapedContent []ScrapedContent, summarizingInstructions, toneInstructions string, maxStories int) ([]SummarizedStory, int, error) {
+func (c *Client) SummarizeContent(ctx context.Context, topicName string, scrapedContent []ScrapedContent, summarizingInstructions, toneInstructions string, maxStories, minWords, maxWords int) ([]SummarizedStory, int, error) {
 	if len(scrapedContent) == 0 {
 		return nil, 0, nil
 	}
@@ -95,7 +95,7 @@ func (c *Client) SummarizeContent(ctx context.Context, topicName string, scraped
 		return nil, 0, fmt.Errorf("gemini API key not configured — set it in Settings")
 	}
 
-	prompt := buildSummarizePrompt(topicName, scrapedContent, summarizingInstructions, toneInstructions, maxStories)
+	prompt := buildSummarizePrompt(topicName, scrapedContent, summarizingInstructions, toneInstructions, maxStories, minWords, maxWords)
 
 	reqBody := GenerateRequest{
 		Contents: []Content{{
@@ -205,7 +205,7 @@ Format:
 	return sb.String()
 }
 
-func buildSummarizePrompt(topicName string, scrapedContent []ScrapedContent, summarizingInstructions, toneInstructions string, maxStories int) string {
+func buildSummarizePrompt(topicName string, scrapedContent []ScrapedContent, summarizingInstructions, toneInstructions string, maxStories, minWords, maxWords int) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf(`You are a news summarization assistant. Analyze the following scraped content and create clear, informative news summaries.
@@ -223,6 +223,14 @@ Topic: %s
 		sb.WriteString("Tone and style: ")
 		sb.WriteString(toneInstructions)
 		sb.WriteString("\n\n")
+	}
+
+	if minWords > 0 && maxWords > 0 {
+		sb.WriteString(fmt.Sprintf("Each story summary should be between %d and %d words long.\n\n", minWords, maxWords))
+	} else if minWords > 0 {
+		sb.WriteString(fmt.Sprintf("Each story summary should be at least %d words long.\n\n", minWords))
+	} else if maxWords > 0 {
+		sb.WriteString(fmt.Sprintf("Each story summary should be at most %d words long.\n\n", maxWords))
 	}
 
 	sb.WriteString("Scraped Content:\n")

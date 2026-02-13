@@ -386,6 +386,23 @@ a:hover {
     max-width: 180px;
 }
 
+.range-input {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.range-input input {
+    width: 5rem;
+    min-width: 0;
+}
+
+.range-input span {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
 .form-group label {
     display: block;
     font-size: 0.85rem;

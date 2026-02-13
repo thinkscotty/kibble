@@ -162,6 +162,17 @@ func (db *DB) migrate() error {
 		}
 	}
 
+	// Additive migrations (safe to re-run; ALTER TABLE errors ignored for existing columns)
+	alterStatements := []string{
+		`ALTER TABLE topics ADD COLUMN summary_min_words INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE topics ADD COLUMN summary_max_words INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE news_topics ADD COLUMN summary_min_words INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE news_topics ADD COLUMN summary_max_words INTEGER NOT NULL DEFAULT 0`,
+	}
+	for _, stmt := range alterStatements {
+		db.conn.Exec(stmt) // ignore "duplicate column" errors
+	}
+
 	return db.seedSettings()
 }
 

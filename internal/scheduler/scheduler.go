@@ -85,6 +85,7 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 	facts, tokensUsed, err := s.gemini.GenerateFacts(
 		ctx, topic.Name, topic.Description,
 		customInstr, toneInstr, topic.FactsPerRefresh,
+		topic.SummaryMinWords, topic.SummaryMaxWords,
 	)
 
 	logEntry := models.APIUsageLog{
@@ -280,6 +281,7 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	stories, _, err := s.gemini.SummarizeContent(
 		ctx, topic.Name, scrapedContent,
 		summarizeInstr, toneInstr, topic.StoriesPerRefresh,
+		topic.SummaryMinWords, topic.SummaryMaxWords,
 	)
 	if err != nil {
 		s.handleNewsRefreshError(newsTopicID, fmt.Errorf("summarize content: %w", err))

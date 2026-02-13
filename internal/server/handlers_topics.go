@@ -45,12 +45,26 @@ func (s *Server) handleTopicCreate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var summaryMinWords, summaryMaxWords int
+	if v := r.FormValue("summary_min_words"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			summaryMinWords = n
+		}
+	}
+	if v := r.FormValue("summary_max_words"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			summaryMaxWords = n
+		}
+	}
+
 	topic := &models.Topic{
 		Name:                   name,
 		Description:            r.FormValue("description"),
 		IsActive:               true,
 		FactsPerRefresh:        factsPerRefresh,
 		RefreshIntervalMinutes: refreshInterval,
+		SummaryMinWords:        summaryMinWords,
+		SummaryMaxWords:        summaryMaxWords,
 	}
 
 	if err := s.db.CreateTopic(topic); err != nil {
@@ -104,6 +118,16 @@ func (s *Server) handleTopicUpdate(w http.ResponseWriter, r *http.Request) {
 	if v := r.FormValue("refresh_interval_minutes"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			topic.RefreshIntervalMinutes = n
+		}
+	}
+	if v := r.FormValue("summary_min_words"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			topic.SummaryMinWords = n
+		}
+	}
+	if v := r.FormValue("summary_max_words"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			topic.SummaryMaxWords = n
 		}
 	}
 

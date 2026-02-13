@@ -8,7 +8,7 @@ import (
 
 var numberingPattern = regexp.MustCompile(`^\s*(?:\d+[\.\)]\s*|[-*]\s+)`)
 
-func BuildPrompt(topic, description, customInstructions, toneInstructions string, count int) string {
+func BuildPrompt(topic, description, customInstructions, toneInstructions string, count, minWords, maxWords int) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf(
@@ -25,6 +25,14 @@ func BuildPrompt(topic, description, customInstructions, toneInstructions string
 
 	if toneInstructions != "" {
 		sb.WriteString(fmt.Sprintf("Tone and style: %s\n", toneInstructions))
+	}
+
+	if minWords > 0 && maxWords > 0 {
+		sb.WriteString(fmt.Sprintf("Each fact should be between %d and %d words long.\n", minWords, maxWords))
+	} else if minWords > 0 {
+		sb.WriteString(fmt.Sprintf("Each fact should be at least %d words long.\n", minWords))
+	} else if maxWords > 0 {
+		sb.WriteString(fmt.Sprintf("Each fact should be at most %d words long.\n", maxWords))
 	}
 
 	sb.WriteString("\nIMPORTANT: Return ONLY the facts as a numbered list (1., 2., 3., etc.), one per line. ")

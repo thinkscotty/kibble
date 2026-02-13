@@ -58,12 +58,26 @@ func (s *Server) handleNewsTopicCreate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var summaryMinWords, summaryMaxWords int
+	if v := r.FormValue("summary_min_words"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			summaryMinWords = n
+		}
+	}
+	if v := r.FormValue("summary_max_words"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			summaryMaxWords = n
+		}
+	}
+
 	nt := &models.NewsTopic{
 		Name:                   name,
 		Description:            r.FormValue("description"),
 		IsActive:               true,
 		StoriesPerRefresh:      storiesPerRefresh,
 		RefreshIntervalMinutes: refreshInterval,
+		SummaryMinWords:        summaryMinWords,
+		SummaryMaxWords:        summaryMaxWords,
 	}
 
 	if err := s.db.CreateNewsTopic(nt); err != nil {
@@ -128,6 +142,16 @@ func (s *Server) handleNewsTopicUpdate(w http.ResponseWriter, r *http.Request) {
 	if v := r.FormValue("refresh_interval_minutes"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			nt.RefreshIntervalMinutes = n
+		}
+	}
+	if v := r.FormValue("summary_min_words"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			nt.SummaryMinWords = n
+		}
+	}
+	if v := r.FormValue("summary_max_words"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			nt.SummaryMaxWords = n
 		}
 	}
 
