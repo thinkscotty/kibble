@@ -42,7 +42,7 @@ The free tier is generous and more than enough for personal use.
 | **Raspberry Pi** (32-bit OS) | `kibble-linux-arm` |
 | **Mac (Apple Silicon)** | `kibble-darwin-arm64` |
 
-3. Install the binary:
+3. Install the binary and prepare directories:
 
 ```bash
 # Download (replace URL with the latest release and your platform)
@@ -52,15 +52,23 @@ wget https://github.com/thinkscotty/kibble/releases/latest/download/kibble-linux
 sudo cp kibble-linux-amd64 /usr/local/bin/kibble
 sudo chmod +x /usr/local/bin/kibble
 
-# Create a data directory
+# Create the data directory (Kibble stores its database here)
 sudo mkdir -p /var/lib/kibble
 ```
+
+> **Important:** Kibble creates its SQLite database (`kibble.db`) in the **current working directory** by default. You must `cd` into a writable directory before starting Kibble, or set an absolute `database.path` in `config.yaml` (see [Configuration](#configuration-optional) below). If the directory doesn't exist or isn't writable, you'll get a "unable to open database file" error at startup.
 
 4. Run it:
 
 ```bash
 cd /var/lib/kibble
 kibble
+```
+
+If you're running as a non-root user, make sure you own the data directory:
+
+```bash
+sudo chown $USER:$USER /var/lib/kibble
 ```
 
 > **Tip for Raspberry Pi users:** If you're not sure whether you're running 32-bit or 64-bit, run `uname -m` in a terminal. If it says `aarch64`, download the `arm64` version. If it says `armv7l`, download the `arm` version.
@@ -86,7 +94,7 @@ make build-arm64
 
 ## Running Kibble
 
-Simply run the binary from the directory where you want the database stored:
+Run the binary from the data directory where you want the database stored:
 
 ```bash
 cd /var/lib/kibble
@@ -94,14 +102,17 @@ kibble
 ```
 
 Kibble will:
-1. Create a `kibble.db` database file in the current directory
+1. Create a `kibble.db` SQLite database in the current working directory
 2. Start a web server on port 8080
+3. Look for an optional `config.yaml` in the current directory
 
 Open your browser and go to: **http://localhost:8080** (or your server's IP/domain).
 
+> **Note:** The current working directory matters. Kibble writes `kibble.db` relative to wherever you run it from. If you start Kibble from `/root` instead of `/var/lib/kibble`, the database will be created at `/root/kibble.db`. When using systemd, the `WorkingDirectory=` setting controls this (see [Production Deployment](#running-as-a-systemd-service)).
+
 ### Configuration (Optional)
 
-You can create a `config.yaml` file next to the binary to customize settings:
+You can create a `config.yaml` file in the data directory (`/var/lib/kibble/`) to customize settings:
 
 ```yaml
 server:
@@ -109,7 +120,7 @@ server:
   port: 8080           # Web server port
 
 database:
-  path: "./kibble.db"  # Database file location
+  path: "./kibble.db"  # Database file location (relative to working directory, or use an absolute path)
 
 logging:
   level: "info"        # debug, info, warn, error
@@ -119,7 +130,7 @@ similarity:
   ngram_size: 3        # Trigram size for similarity comparison
 ```
 
-All of these have sensible defaults, so the config file is entirely optional.
+All of these have sensible defaults, so the config file is entirely optional. If you want to use an absolute path for the database regardless of working directory, set `database.path` to something like `/var/lib/kibble/kibble.db`.
 
 ## Using Kibble
 
@@ -354,6 +365,15 @@ SyslogIdentifier=kibble
 WantedBy=multi-user.target
 ```
 
+> **Critical:** The `WorkingDirectory=` must point to a directory that **exists** and is **writable** by the `User=` specified above. This is where Kibble creates its database. If the directory is missing or the user doesn't have write permission, Kibble will fail with "unable to open database file". Create the directory first:
+> ```bash
+> # For VPS (running as root):
+> sudo mkdir -p /var/lib/kibble
+>
+> # For Raspberry Pi (running as pi):
+> mkdir -p /home/pi/kibble
+> ```
+
 Then enable and start it:
 
 ```bash
@@ -440,10 +460,15 @@ sudo systemctl start kibble
 
 ## Troubleshooting
 
+- **"unable to open database file"** or **"out of memory (14)"**: This is SQLite error code 14 (`SQLITE_CANTOPEN`) — it means Kibble can't create or open the database file. Check that:
+  1. The data directory exists: `ls -la /var/lib/kibble/`
+  2. The running user has write permission: `sudo chown $USER:$USER /var/lib/kibble`
+  3. If using systemd, `WorkingDirectory=` in the service file points to the correct, existing directory
+  4. Or set an absolute path in `config.yaml`: `database: { path: "/var/lib/kibble/kibble.db" }`
 - **"API key not configured"**: Go to Settings and enter your Gemini API key
 - **Facts not generating**: Click "Test Key" on the Settings page to verify your API key works
 - **Page not loading**: Make sure nothing else is using port 8080, or change the port in `config.yaml`
-- **Can't access from another device**: Make sure you're using the Pi's IP address (not `localhost`) and that both devices are on the same network
+- **Can't access from another device**: Make sure you're using the server's IP address (not `localhost`) and that both devices are on the same network
 
 ## Uninstalling Kibble
 
