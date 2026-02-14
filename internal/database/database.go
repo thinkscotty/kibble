@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -17,6 +18,12 @@ type DB struct {
 }
 
 func New(path string) (*DB, error) {
+	// If path points to an existing directory, append the default filename.
+	if info, err := os.Stat(path); err == nil && info.IsDir() {
+		path = filepath.Join(path, "kibble.db")
+		slog.Info("Database path is a directory, using file inside it", "path", path)
+	}
+
 	// Ensure the parent directory exists so SQLite can create the file.
 	if dir := filepath.Dir(path); dir != "." && dir != "" {
 		if err := os.MkdirAll(dir, 0755); err != nil {

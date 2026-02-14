@@ -56,7 +56,7 @@ sudo chmod +x /usr/local/bin/kibble
 sudo mkdir -p /var/lib/kibble
 ```
 
-> **Important:** Kibble creates its SQLite database (`kibble.db`) in the **current working directory** by default. You must `cd` into a writable directory before starting Kibble, or set an absolute `database.path` in `config.yaml` (see [Configuration](#configuration-optional) below). If the directory doesn't exist or isn't writable, you'll get a "unable to open database file" error at startup.
+> **Important:** Kibble creates its SQLite database (`kibble.db`) in the **current working directory** by default. You can also set `database.path` in `config.yaml` to either a file path (e.g., `/var/lib/kibble/kibble.db`) or a directory (e.g., `/var/lib/kibble`) — if you point to a directory, Kibble will automatically use `kibble.db` inside it. See [Configuration](#configuration-optional) below.
 
 4. Run it:
 
@@ -120,7 +120,7 @@ server:
   port: 8080           # Web server port
 
 database:
-  path: "./kibble.db"  # Database file location (relative to working directory, or use an absolute path)
+  path: "/var/lib/kibble"  # Directory or file path — if a directory, Kibble uses kibble.db inside it
 
 logging:
   level: "info"        # debug, info, warn, error
@@ -130,7 +130,7 @@ similarity:
   ngram_size: 3        # Trigram size for similarity comparison
 ```
 
-All of these have sensible defaults, so the config file is entirely optional. If you want to use an absolute path for the database regardless of working directory, set `database.path` to something like `/var/lib/kibble/kibble.db`.
+All of these have sensible defaults, so the config file is entirely optional. You can set `database.path` to either a directory (`/var/lib/kibble`) or a full file path (`/var/lib/kibble/kibble.db`) — both work. Kibble will also create any missing parent directories automatically.
 
 ## Using Kibble
 
@@ -461,10 +461,9 @@ sudo systemctl start kibble
 ## Troubleshooting
 
 - **"unable to open database file"** or **"out of memory (14)"**: This is SQLite error code 14 (`SQLITE_CANTOPEN`) — it means Kibble can't create or open the database file. Check that:
-  1. The data directory exists: `ls -la /var/lib/kibble/`
-  2. The running user has write permission: `sudo chown $USER:$USER /var/lib/kibble`
-  3. If using systemd, `WorkingDirectory=` in the service file points to the correct, existing directory
-  4. Or set an absolute path in `config.yaml`: `database: { path: "/var/lib/kibble/kibble.db" }`
+  1. The running user has write permission to the data directory: `sudo chown $USER:$USER /var/lib/kibble`
+  2. If using systemd, `WorkingDirectory=` in the service file points to a writable directory
+  3. Set `database.path` in `config.yaml` to point to your data directory or file: `database: { path: "/var/lib/kibble" }`
 - **"API key not configured"**: Go to Settings and enter your Gemini API key
 - **Facts not generating**: Click "Test Key" on the Settings page to verify your API key works
 - **Page not loading**: Make sure nothing else is using port 8080, or change the port in `config.yaml`
