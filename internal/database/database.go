@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/thinkscotty/kibble/internal/apikey"
@@ -16,6 +17,13 @@ type DB struct {
 }
 
 func New(path string) (*DB, error) {
+	// Ensure the parent directory exists so SQLite can create the file.
+	if dir := filepath.Dir(path); dir != "." && dir != "" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, fmt.Errorf("create database directory %q: %w", dir, err)
+		}
+	}
+
 	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)", path)
 	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
