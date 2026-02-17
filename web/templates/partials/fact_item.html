@@ -5,7 +5,7 @@
         <div class="fact-meta">
             {{if .TopicName}}<span class="badge badge-topic">{{.TopicName}}</span>{{end}}
             <span class="badge {{if .IsCustom}}badge-custom{{else}}badge-ai{{end}}">
-                {{if .IsCustom}}Custom{{else}}AI{{end}}
+                {{if .IsCustom}}Custom{{else if eq .AIProvider "ollama"}}{{.AIModel}}{{else if eq .AIProvider "gemini"}}Gemini{{else}}AI{{end}}
             </span>
         </div>
     </div>

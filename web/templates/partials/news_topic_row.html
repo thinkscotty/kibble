@@ -9,6 +9,8 @@
             <span class="badge {{if .NewsTopic.IsActive}}badge-active{{else}}badge-inactive{{end}}">
                 {{if .NewsTopic.IsActive}}Active{{else}}Inactive{{end}}
             </span>
+            {{if .NewsTopic.AIProvider}}<span class="badge badge-ai">{{if eq .NewsTopic.AIProvider "ollama"}}Ollama{{else}}Gemini{{end}}</span>{{end}}
+            {{if .NewsTopic.IsNiche}}<span class="badge badge-niche">Niche</span>{{end}}
             <span class="text-muted text-sm">{{.NewsTopic.StoriesPerRefresh}} stories / {{.NewsTopic.RefreshIntervalMinutes}}min</span>
             <span class="text-muted text-sm">Last: {{timeAgo .NewsTopic.LastRefreshedAt}}</span>
         </div>

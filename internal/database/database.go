@@ -192,6 +192,17 @@ func (db *DB) migrate() error {
 		`ALTER TABLE topics ADD COLUMN summary_max_words INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE news_topics ADD COLUMN summary_min_words INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE news_topics ADD COLUMN summary_max_words INTEGER NOT NULL DEFAULT 0`,
+		// Ollama / multi-provider support
+		`ALTER TABLE topics ADD COLUMN ai_provider TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE topics ADD COLUMN is_niche INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE news_topics ADD COLUMN ai_provider TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE news_topics ADD COLUMN is_niche INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE facts ADD COLUMN ai_provider TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE facts ADD COLUMN ai_model TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE stories ADD COLUMN ai_provider TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE stories ADD COLUMN ai_model TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE api_usage_log ADD COLUMN ai_provider TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE api_usage_log ADD COLUMN ai_model TEXT NOT NULL DEFAULT ''`,
 	}
 	for _, stmt := range alterStatements {
 		db.conn.Exec(stmt) // ignore "duplicate column" errors
@@ -214,6 +225,9 @@ func (db *DB) seedSettings() error {
 		"news_summarizing_instructions": "Summarize the news story in a clear, informative tone. Focus on the key facts and why this story matters. Keep the summary between 75-150 words.",
 		"news_tone_instructions":        "",
 		"stories_per_topic_display":     "5",
+		"ai_provider":                   "gemini",
+		"ollama_url":                    "http://localhost:11434",
+		"ollama_model":                  "mistral-nemo",
 	}
 
 	stmt, err := db.conn.Prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`)

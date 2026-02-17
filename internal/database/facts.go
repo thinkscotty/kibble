@@ -17,7 +17,7 @@ type StoredTrigrams struct {
 func (db *DB) ListFactsByTopic(topicID int64, limit int) ([]models.Fact, error) {
 	rows, err := db.conn.Query(`
 		SELECT f.id, f.topic_id, f.content, f.trigrams, f.is_custom, f.is_archived,
-		       f.source, f.created_at, f.updated_at
+		       f.source, f.ai_provider, f.ai_model, f.created_at, f.updated_at
 		FROM facts f
 		WHERE f.topic_id = ? AND f.is_archived = 0
 		ORDER BY f.created_at DESC LIMIT ?`, topicID, limit)
@@ -33,10 +33,10 @@ func (db *DB) GetFact(id int64) (models.Fact, error) {
 	var createdAt, updatedAt string
 	err := db.conn.QueryRow(`
 		SELECT f.id, f.topic_id, f.content, f.trigrams, f.is_custom, f.is_archived,
-		       f.source, f.created_at, f.updated_at
+		       f.source, f.ai_provider, f.ai_model, f.created_at, f.updated_at
 		FROM facts f WHERE f.id = ?`, id).Scan(
 		&f.ID, &f.TopicID, &f.Content, &f.Trigrams, &f.IsCustom, &f.IsArchived,
-		&f.Source, &createdAt, &updatedAt)
+		&f.Source, &f.AIProvider, &f.AIModel, &createdAt, &updatedAt)
 	if err != nil {
 		return f, err
 	}
@@ -47,9 +47,10 @@ func (db *DB) GetFact(id int64) (models.Fact, error) {
 
 func (db *DB) CreateFact(f *models.Fact) error {
 	result, err := db.conn.Exec(`
-		INSERT INTO facts (topic_id, content, trigrams, is_custom, source)
-		VALUES (?, ?, ?, ?, ?)`,
-		f.TopicID, f.Content, f.Trigrams, boolToInt(f.IsCustom), f.Source)
+		INSERT INTO facts (topic_id, content, trigrams, is_custom, source, ai_provider, ai_model)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		f.TopicID, f.Content, f.Trigrams, boolToInt(f.IsCustom), f.Source,
+		f.AIProvider, f.AIModel)
 	if err != nil {
 		return err
 	}
@@ -152,7 +153,7 @@ func scanFacts(rows *sql.Rows) ([]models.Fact, error) {
 		var createdAt, updatedAt string
 		if err := rows.Scan(
 			&f.ID, &f.TopicID, &f.Content, &f.Trigrams, &f.IsCustom, &f.IsArchived,
-			&f.Source, &createdAt, &updatedAt,
+			&f.Source, &f.AIProvider, &f.AIModel, &createdAt, &updatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan fact: %w", err)
 		}

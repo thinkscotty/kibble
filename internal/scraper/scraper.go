@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/thinkscotty/kibble/internal/gemini"
+	"github.com/thinkscotty/kibble/internal/ai"
 	"github.com/thinkscotty/kibble/internal/models"
 	"github.com/thinkscotty/kibble/internal/reddit"
 )
@@ -25,7 +25,7 @@ type Scraper struct {
 // ScrapeResult represents the result of scraping a single source.
 type ScrapeResult struct {
 	Source  models.NewsSource
-	Content *gemini.ScrapedContent
+	Content *ai.ScrapedContent
 	Error   error
 }
 
@@ -40,7 +40,7 @@ func New() *Scraper {
 }
 
 // ScrapeSource scrapes content from a single source.
-func (s *Scraper) ScrapeSource(ctx context.Context, source models.NewsSource) (*gemini.ScrapedContent, error) {
+func (s *Scraper) ScrapeSource(ctx context.Context, source models.NewsSource) (*ai.ScrapedContent, error) {
 	if reddit.IsRedditURL(source.URL) {
 		return s.scrapeRedditSource(ctx, source)
 	}
@@ -159,7 +159,7 @@ func (s *Scraper) ScrapeSource(ctx context.Context, source models.NewsSource) (*
 		}
 	}
 
-	return &gemini.ScrapedContent{
+	return &ai.ScrapedContent{
 		URL:        source.URL,
 		SourceName: sourceName,
 		Content:    contentStr,
@@ -229,7 +229,7 @@ func ValidateURL(urlStr string) error {
 	return nil
 }
 
-func (s *Scraper) scrapeRedditSource(ctx context.Context, source models.NewsSource) (*gemini.ScrapedContent, error) {
+func (s *Scraper) scrapeRedditSource(ctx context.Context, source models.NewsSource) (*ai.ScrapedContent, error) {
 	posts, err := s.redditClient.FetchPosts(ctx, source.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Reddit posts: %w", err)
@@ -258,7 +258,7 @@ func (s *Scraper) scrapeRedditSource(ctx context.Context, source models.NewsSour
 		sourceName = extractSubredditName(source.URL)
 	}
 
-	return &gemini.ScrapedContent{
+	return &ai.ScrapedContent{
 		URL:        source.URL,
 		SourceName: sourceName,
 		Content:    contentStr,

@@ -13,13 +13,14 @@ import (
 	"syscall"
 
 	kibble "github.com/thinkscotty/kibble"
+	"github.com/thinkscotty/kibble/internal/ai"
 	"github.com/thinkscotty/kibble/internal/config"
 	"github.com/thinkscotty/kibble/internal/database"
-	"github.com/thinkscotty/kibble/internal/gemini"
 	"github.com/thinkscotty/kibble/internal/scheduler"
 	"github.com/thinkscotty/kibble/internal/scraper"
 	"github.com/thinkscotty/kibble/internal/server"
 	"github.com/thinkscotty/kibble/internal/similarity"
+	"github.com/thinkscotty/kibble/internal/wikipedia"
 )
 
 var (
@@ -80,13 +81,14 @@ func main() {
 	slog.Info("Loaded themes", "count", len(themes))
 
 	// Initialize services
-	geminiClient := gemini.NewClient(db)
+	wikiClient := wikipedia.New()
+	aiClient := ai.NewClient(db, wikiClient)
 	sim := similarity.New(cfg.Similarity.Threshold, cfg.Similarity.NGramSize)
 	sc := scraper.New()
-	sched := scheduler.New(db, geminiClient, sim, sc)
+	sched := scheduler.New(db, aiClient, sim, sc)
 
 	// Build HTTP server
-	srv := server.New(cfg, db, geminiClient, sim, sched, themes, version, buildTime)
+	srv := server.New(cfg, db, aiClient, sim, sched, themes, version, buildTime)
 
 	// Start scheduler in background
 	ctx, cancel := context.WithCancel(context.Background())

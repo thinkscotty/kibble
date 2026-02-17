@@ -67,10 +67,10 @@ func (db *DB) GetAllSettings() (map[string]string, error) {
 
 func (db *DB) LogAPIUsage(log models.APIUsageLog) error {
 	_, err := db.conn.Exec(`
-		INSERT INTO api_usage_log (topic_id, facts_requested, facts_generated, facts_discarded, tokens_used, error_message)
-		VALUES (?, ?, ?, ?, ?, ?)`,
+		INSERT INTO api_usage_log (topic_id, facts_requested, facts_generated, facts_discarded, tokens_used, ai_provider, ai_model, error_message)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		log.TopicID, log.FactsRequested, log.FactsGenerated, log.FactsDiscarded,
-		log.TokensUsed, log.ErrorMessage)
+		log.TokensUsed, log.AIProvider, log.AIModel, log.ErrorMessage)
 	return err
 }
 
@@ -113,6 +113,7 @@ func (db *DB) RecentAPIUsage(limit int) ([]models.APIUsageLog, error) {
 	rows, err := db.conn.Query(`
 		SELECT l.id, l.topic_id, COALESCE(t.name, 'Deleted Topic'), l.facts_requested,
 		       l.facts_generated, l.facts_discarded, l.tokens_used,
+		       l.ai_provider, l.ai_model,
 		       COALESCE(l.error_message, ''), l.created_at
 		FROM api_usage_log l
 		LEFT JOIN topics t ON l.topic_id = t.id
@@ -128,6 +129,7 @@ func (db *DB) RecentAPIUsage(limit int) ([]models.APIUsageLog, error) {
 		var createdAt string
 		if err := rows.Scan(&log.ID, &log.TopicID, &log.TopicName, &log.FactsRequested,
 			&log.FactsGenerated, &log.FactsDiscarded, &log.TokensUsed,
+			&log.AIProvider, &log.AIModel,
 			&log.ErrorMessage, &createdAt); err != nil {
 			return nil, err
 		}

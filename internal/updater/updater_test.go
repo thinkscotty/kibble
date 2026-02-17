@@ -124,6 +124,7 @@ func TestMatchAsset(t *testing.T) {
 		{Name: "kibble-linux-arm64", Size: 2000},
 		{Name: "kibble-linux-arm", Size: 3000},
 		{Name: "kibble-darwin-arm64", Size: 4000},
+		{Name: "kibble-windows-amd64.exe", Size: 5000},
 	}
 
 	tests := []struct {
@@ -138,7 +139,7 @@ func TestMatchAsset(t *testing.T) {
 		{"Linux ARM64", "linux", "arm64", true, "kibble-linux-arm64", 2000},
 		{"Linux ARM", "linux", "arm", true, "kibble-linux-arm", 3000},
 		{"macOS ARM64", "darwin", "arm64", true, "kibble-darwin-arm64", 4000},
-		{"Windows AMD64", "windows", "amd64", false, "", 0},
+		{"Windows AMD64", "windows", "amd64", true, "kibble-windows-amd64.exe", 5000},
 	}
 
 	for _, tt := range tests {
@@ -146,6 +147,9 @@ func TestMatchAsset(t *testing.T) {
 			// We can't easily mock runtime.GOOS/GOARCH, so we test matchAsset directly
 			// by looking for the expected name in the assets
 			wantName := "kibble-" + tt.goos + "-" + tt.goarch
+			if tt.goos == "windows" {
+				wantName += ".exe"
+			}
 			var found bool
 			var gotAsset ghAsset
 			for _, a := range assets {

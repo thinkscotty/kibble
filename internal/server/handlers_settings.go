@@ -48,6 +48,9 @@ func (s *Server) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 
 	settingsKeys := []string{
 		"gemini_api_key",
+		"ai_provider",
+		"ollama_url",
+		"ollama_model",
 		"ai_custom_instructions",
 		"ai_tone_instructions",
 		"news_sourcing_instructions",
@@ -92,7 +95,7 @@ func (s *Server) handleAPIKeyTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.gemini.TestAPIKey(r.Context(), apiKey)
+	err := s.ai.TestGeminiKey(r.Context(), apiKey)
 	if err != nil {
 		slog.Error("API key test failed", "error", err)
 		w.Write([]byte(`<span class="text-error">API key test failed: ` + err.Error() + `</span>`))
@@ -100,6 +103,54 @@ func (s *Server) handleAPIKeyTest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(`<span class="text-success">API key is valid!</span>`))
+}
+
+func (s *Server) handleOllamaTest(w http.ResponseWriter, r *http.Request) {
+	ollamaURL := r.FormValue("ollama_url")
+	if ollamaURL == "" {
+		ollamaURL = "http://localhost:11434"
+	}
+
+	// Temporarily save the URL so TestOllamaConnection can read it
+	s.db.SetSetting("ollama_url", ollamaURL)
+
+	err := s.ai.TestOllamaConnection(r.Context())
+	if err != nil {
+		slog.Error("Ollama connection test failed", "error", err)
+		w.Write([]byte(`<span class="text-error">Connection failed: ` + template.HTMLEscapeString(err.Error()) + `</span>`))
+		return
+	}
+
+	w.Write([]byte(`<span class="text-success">Connected to Ollama!</span>`))
+}
+
+func (s *Server) handleOllamaModels(w http.ResponseWriter, r *http.Request) {
+	ollamaURL := r.FormValue("ollama_url")
+	if ollamaURL != "" {
+		s.db.SetSetting("ollama_url", ollamaURL)
+	}
+
+	models, err := s.ai.ListOllamaModels(r.Context())
+	if err != nil {
+		slog.Error("Failed to list Ollama models", "error", err)
+		w.Write([]byte(`<option value="">Failed to load models</option>`))
+		return
+	}
+
+	if len(models) == 0 {
+		w.Write([]byte(`<option value="">No models found</option>`))
+		return
+	}
+
+	currentModel, _ := s.db.GetSetting("ollama_model")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	for _, m := range models {
+		selected := ""
+		if m.Name == currentModel {
+			selected = " selected"
+		}
+		fmt.Fprintf(w, `<option value="%s"%s>%s</option>`, template.HTMLEscapeString(m.Name), selected, template.HTMLEscapeString(m.Name))
+	}
 }
 
 func (s *Server) handleAPIKeyRegenerate(w http.ResponseWriter, r *http.Request) {

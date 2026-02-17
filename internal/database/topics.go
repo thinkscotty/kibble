@@ -12,7 +12,7 @@ func (db *DB) ListTopics() ([]models.Topic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, facts_per_refresh,
 		       refresh_interval_minutes, summary_min_words, summary_max_words,
-		       last_refreshed_at, created_at, updated_at
+		       ai_provider, is_niche, last_refreshed_at, created_at, updated_at
 		FROM topics ORDER BY display_order ASC, id ASC`)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (db *DB) ListActiveTopics() ([]models.Topic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, facts_per_refresh,
 		       refresh_interval_minutes, summary_min_words, summary_max_words,
-		       last_refreshed_at, created_at, updated_at
+		       ai_provider, is_niche, last_refreshed_at, created_at, updated_at
 		FROM topics WHERE is_active = 1 ORDER BY display_order ASC, id ASC`)
 	if err != nil {
 		return nil, err
@@ -42,11 +42,12 @@ func (db *DB) GetTopic(id int64) (models.Topic, error) {
 	err := db.conn.QueryRow(`
 		SELECT id, name, description, display_order, is_active, facts_per_refresh,
 		       refresh_interval_minutes, summary_min_words, summary_max_words,
-		       last_refreshed_at, created_at, updated_at
+		       ai_provider, is_niche, last_refreshed_at, created_at, updated_at
 		FROM topics WHERE id = ?`, id).Scan(
 		&t.ID, &t.Name, &t.Description, &t.DisplayOrder, &t.IsActive,
 		&t.FactsPerRefresh, &t.RefreshIntervalMinutes,
-		&t.SummaryMinWords, &t.SummaryMaxWords, &lastRefreshed,
+		&t.SummaryMinWords, &t.SummaryMaxWords,
+		&t.AIProvider, &t.IsNiche, &lastRefreshed,
 		&createdAt, &updatedAt)
 	if err != nil {
 		return t, err
@@ -71,11 +72,12 @@ func (db *DB) CreateTopic(t *models.Topic) error {
 	}
 
 	result, err := db.conn.Exec(`
-		INSERT INTO topics (name, description, display_order, is_active, facts_per_refresh, refresh_interval_minutes, summary_min_words, summary_max_words)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO topics (name, description, display_order, is_active, facts_per_refresh, refresh_interval_minutes, summary_min_words, summary_max_words, ai_provider, is_niche)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		t.Name, t.Description, nextOrder, boolToInt(t.IsActive),
 		t.FactsPerRefresh, t.RefreshIntervalMinutes,
-		t.SummaryMinWords, t.SummaryMaxWords)
+		t.SummaryMinWords, t.SummaryMaxWords,
+		t.AIProvider, boolToInt(t.IsNiche))
 	if err != nil {
 		return err
 	}
@@ -93,11 +95,13 @@ func (db *DB) UpdateTopic(t *models.Topic) error {
 		UPDATE topics SET name = ?, description = ?, is_active = ?,
 		       facts_per_refresh = ?, refresh_interval_minutes = ?,
 		       summary_min_words = ?, summary_max_words = ?,
+		       ai_provider = ?, is_niche = ?,
 		       updated_at = datetime('now')
 		WHERE id = ?`,
 		t.Name, t.Description, boolToInt(t.IsActive),
 		t.FactsPerRefresh, t.RefreshIntervalMinutes,
-		t.SummaryMinWords, t.SummaryMaxWords, t.ID)
+		t.SummaryMinWords, t.SummaryMaxWords,
+		t.AIProvider, boolToInt(t.IsNiche), t.ID)
 	return err
 }
 
@@ -142,7 +146,7 @@ func (db *DB) TopicsDueForRefresh() ([]models.Topic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, facts_per_refresh,
 		       refresh_interval_minutes, summary_min_words, summary_max_words,
-		       last_refreshed_at, created_at, updated_at
+		       ai_provider, is_niche, last_refreshed_at, created_at, updated_at
 		FROM topics
 		WHERE is_active = 1
 		  AND (last_refreshed_at IS NULL
@@ -174,7 +178,8 @@ func scanTopics(rows *sql.Rows) ([]models.Topic, error) {
 		if err := rows.Scan(
 			&t.ID, &t.Name, &t.Description, &t.DisplayOrder, &t.IsActive,
 			&t.FactsPerRefresh, &t.RefreshIntervalMinutes,
-			&t.SummaryMinWords, &t.SummaryMaxWords, &lastRefreshed,
+			&t.SummaryMinWords, &t.SummaryMaxWords,
+			&t.AIProvider, &t.IsNiche, &lastRefreshed,
 			&createdAt, &updatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan topic: %w", err)

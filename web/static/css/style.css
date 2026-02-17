@@ -553,6 +553,17 @@ a:hover {
     color: #10b981;
 }
 
+.badge-ai-source {
+    background-color: rgba(99, 102, 241, 0.15);
+    color: #6366f1;
+    font-size: 0.7rem;
+}
+
+.badge-niche {
+    background-color: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+}
+
 /* ==================== Table ==================== */
 .table-wrap {
     overflow-x: auto;

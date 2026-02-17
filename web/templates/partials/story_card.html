@@ -29,9 +29,10 @@
                     {{end}}
                 </h4>
                 <p class="story-summary">{{.Summary}}</p>
-                {{if .SourceTitle}}
-                <p class="story-source text-muted text-sm">Source: {{.SourceTitle}}</p>
-                {{end}}
+                <p class="story-meta text-muted text-sm">
+                    {{if .SourceTitle}}Source: {{.SourceTitle}}{{end}}
+                    {{if .AIProvider}}<span class="badge badge-ai-source">{{if eq .AIProvider "ollama"}}{{.AIModel}}{{else}}Gemini{{end}}</span>{{end}}
+                </p>
             </div>
             {{end}}
         {{else}}

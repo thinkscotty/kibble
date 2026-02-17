@@ -9,9 +9,22 @@
 
 <form hx-post="/settings" hx-target="body" hx-swap="outerHTML" hx-push-url="false">
 
-    <!-- Gemini API Key -->
+    <!-- AI Provider -->
     <div class="card">
-        <h3 class="card-title">Gemini API Key</h3>
+        <h3 class="card-title">AI Provider</h3>
+        <p class="text-muted text-sm">Choose which AI provider to use for generating facts and summarizing news.</p>
+
+        <div class="form-group form-group-sm">
+            <label for="ai_provider">Primary AI Provider</label>
+            <select id="ai_provider" name="ai_provider" class="form-input">
+                <option value="gemini" {{if eq (index .Settings "ai_provider") "gemini"}}selected{{end}}>Gemini (Cloud)</option>
+                <option value="ollama" {{if eq (index .Settings "ai_provider") "ollama"}}selected{{end}}>Ollama (Local)</option>
+            </select>
+        </div>
+
+        <hr style="border-color: var(--border); margin: 1rem 0;">
+
+        <h4 style="margin-bottom: 0.5rem;">Gemini Configuration</h4>
         <p class="text-muted text-sm">Enter your Google Gemini Flash 2.5 free-tier API key. Get one from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>.</p>
         <div class="form-row">
             <div class="form-group">
@@ -31,6 +44,45 @@
             </div>
         </div>
         <div id="apikey-test-result"></div>
+
+        <hr style="border-color: var(--border); margin: 1rem 0;">
+
+        <h4 style="margin-bottom: 0.5rem;">Ollama Configuration</h4>
+        <p class="text-muted text-sm">Configure the Ollama server for local AI inference. Ollama must be running and accessible at the URL below.</p>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="ollama_url">Server URL</label>
+                <input type="text" id="ollama_url" name="ollama_url"
+                       value="{{index .Settings "ollama_url"}}"
+                       placeholder="http://localhost:11434"
+                       class="form-input">
+            </div>
+            <div class="form-group form-group-sm" style="align-self: flex-end;">
+                <button type="button" class="btn btn-secondary"
+                        hx-post="/settings/ollama/test"
+                        hx-target="#ollama-test-result"
+                        hx-include="[name='ollama_url']">
+                    Test Connection
+                </button>
+            </div>
+        </div>
+        <div id="ollama-test-result"></div>
+        <div class="form-row" style="margin-top: 0.5rem;">
+            <div class="form-group">
+                <label for="ollama_model">Default Model</label>
+                <select id="ollama_model" name="ollama_model" class="form-input">
+                    <option value="{{index .Settings "ollama_model"}}">{{index .Settings "ollama_model"}}</option>
+                </select>
+            </div>
+            <div class="form-group form-group-sm" style="align-self: flex-end;">
+                <button type="button" class="btn btn-secondary"
+                        hx-get="/settings/ollama/models"
+                        hx-target="#ollama_model"
+                        hx-include="[name='ollama_url']">
+                    Refresh Models
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- AI Instructions (Facts) -->

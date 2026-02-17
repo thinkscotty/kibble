@@ -11,9 +11,9 @@ import (
 	"time"
 
 	kibble "github.com/thinkscotty/kibble"
+	"github.com/thinkscotty/kibble/internal/ai"
 	"github.com/thinkscotty/kibble/internal/config"
 	"github.com/thinkscotty/kibble/internal/database"
-	"github.com/thinkscotty/kibble/internal/gemini"
 	"github.com/thinkscotty/kibble/internal/scheduler"
 	"github.com/thinkscotty/kibble/internal/similarity"
 )
@@ -21,7 +21,7 @@ import (
 type Server struct {
 	cfg       config.Config
 	db        *database.DB
-	gemini    *gemini.Client
+	ai        *ai.Client
 	sim       *similarity.Checker
 	sched     *scheduler.Scheduler
 	themes    []config.Theme
@@ -33,11 +33,11 @@ type Server struct {
 	httpSrv   *http.Server
 }
 
-func New(cfg config.Config, db *database.DB, geminiClient *gemini.Client, sim *similarity.Checker, sched *scheduler.Scheduler, themes []config.Theme, version, buildTime string) *Server {
+func New(cfg config.Config, db *database.DB, aiClient *ai.Client, sim *similarity.Checker, sched *scheduler.Scheduler, themes []config.Theme, version, buildTime string) *Server {
 	s := &Server{
 		cfg:       cfg,
 		db:        db,
-		gemini:    geminiClient,
+		ai:        aiClient,
 		sim:       sim,
 		sched:     sched,
 		themes:    themes,
@@ -140,6 +140,8 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.Handle("POST /settings", s.requireAuth(http.HandlerFunc(s.handleSettingsUpdate)))
 	mux.Handle("POST /settings/apikey/test", s.requireAuth(http.HandlerFunc(s.handleAPIKeyTest)))
 	mux.Handle("POST /settings/apikey/regenerate", s.requireAuth(http.HandlerFunc(s.handleAPIKeyRegenerate)))
+	mux.Handle("POST /settings/ollama/test", s.requireAuth(http.HandlerFunc(s.handleOllamaTest)))
+	mux.Handle("GET /settings/ollama/models", s.requireAuth(http.HandlerFunc(s.handleOllamaModels)))
 	mux.Handle("POST /settings/update/check", s.requireAuth(http.HandlerFunc(s.handleUpdateCheck)))
 	mux.Handle("POST /settings/update/install", s.requireAuth(http.HandlerFunc(s.handleUpdateInstall)))
 }

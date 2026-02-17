@@ -12,6 +12,8 @@ type Topic struct {
 	RefreshIntervalMinutes int        `json:"refresh_interval_minutes"`
 	SummaryMinWords        int        `json:"summary_min_words"`
 	SummaryMaxWords        int        `json:"summary_max_words"`
+	AIProvider             string     `json:"ai_provider"`
+	IsNiche                bool       `json:"is_niche"`
 	LastRefreshedAt        *time.Time `json:"last_refreshed_at,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
@@ -26,6 +28,8 @@ type Fact struct {
 	IsCustom   bool      `json:"is_custom"`
 	IsArchived bool      `json:"is_archived"`
 	Source     string    `json:"source"`
+	AIProvider string    `json:"ai_provider"`
+	AIModel    string    `json:"ai_model"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
@@ -44,6 +48,8 @@ type APIUsageLog struct {
 	FactsGenerated int       `json:"facts_generated"`
 	FactsDiscarded int       `json:"facts_discarded"`
 	TokensUsed     int       `json:"tokens_used"`
+	AIProvider     string    `json:"ai_provider"`
+	AIModel        string    `json:"ai_model"`
 	ErrorMessage   string    `json:"error_message,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 }
@@ -78,6 +84,8 @@ type NewsTopic struct {
 	RefreshIntervalMinutes int        `json:"refresh_interval_minutes"`
 	SummaryMinWords        int        `json:"summary_min_words"`
 	SummaryMaxWords        int        `json:"summary_max_words"`
+	AIProvider             string     `json:"ai_provider"`
+	IsNiche                bool       `json:"is_niche"`
 	LastRefreshedAt        *time.Time `json:"last_refreshed_at,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
@@ -102,6 +110,8 @@ type Story struct {
 	Summary     string    `json:"summary"`
 	SourceURL   string    `json:"source_url"`
 	SourceTitle string    `json:"source_title"`
+	AIProvider  string    `json:"ai_provider"`
+	AIModel     string    `json:"ai_model"`
 	PublishedAt time.Time `json:"published_at"`
 	CreatedAt   time.Time `json:"created_at"`
 }

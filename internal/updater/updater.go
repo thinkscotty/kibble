@@ -215,6 +215,9 @@ func RestartService() error {
 // matchAsset finds the GitHub release asset matching the current platform.
 func matchAsset(assets []ghAsset) (ghAsset, bool) {
 	wantName := fmt.Sprintf("kibble-%s-%s", runtime.GOOS, runtime.GOARCH)
+	if runtime.GOOS == "windows" {
+		wantName += ".exe"
+	}
 	for _, a := range assets {
 		if a.Name == wantName {
 			return a, true

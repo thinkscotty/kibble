@@ -13,7 +13,7 @@ func (db *DB) ListNewsTopics() ([]models.NewsTopic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, stories_per_refresh,
 		       refresh_interval_minutes, summary_min_words, summary_max_words,
-		       last_refreshed_at, created_at, updated_at
+		       ai_provider, is_niche, last_refreshed_at, created_at, updated_at
 		FROM news_topics ORDER BY display_order ASC, id ASC`)
 	if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func (db *DB) ListActiveNewsTopics() ([]models.NewsTopic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, stories_per_refresh,
 		       refresh_interval_minutes, summary_min_words, summary_max_words,
-		       last_refreshed_at, created_at, updated_at
+		       ai_provider, is_niche, last_refreshed_at, created_at, updated_at
 		FROM news_topics WHERE is_active = 1 ORDER BY display_order ASC, id ASC`)
 	if err != nil {
 		return nil, err
@@ -43,11 +43,12 @@ func (db *DB) GetNewsTopic(id int64) (models.NewsTopic, error) {
 	err := db.conn.QueryRow(`
 		SELECT id, name, description, display_order, is_active, stories_per_refresh,
 		       refresh_interval_minutes, summary_min_words, summary_max_words,
-		       last_refreshed_at, created_at, updated_at
+		       ai_provider, is_niche, last_refreshed_at, created_at, updated_at
 		FROM news_topics WHERE id = ?`, id).Scan(
 		&t.ID, &t.Name, &t.Description, &t.DisplayOrder, &t.IsActive,
 		&t.StoriesPerRefresh, &t.RefreshIntervalMinutes,
-		&t.SummaryMinWords, &t.SummaryMaxWords, &lastRefreshed,
+		&t.SummaryMinWords, &t.SummaryMaxWords,
+		&t.AIProvider, &t.IsNiche, &lastRefreshed,
 		&createdAt, &updatedAt)
 	if err != nil {
 		return t, err
@@ -71,11 +72,12 @@ func (db *DB) CreateNewsTopic(t *models.NewsTopic) error {
 	}
 
 	result, err := db.conn.Exec(`
-		INSERT INTO news_topics (name, description, display_order, is_active, stories_per_refresh, refresh_interval_minutes, summary_min_words, summary_max_words)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO news_topics (name, description, display_order, is_active, stories_per_refresh, refresh_interval_minutes, summary_min_words, summary_max_words, ai_provider, is_niche)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		t.Name, t.Description, nextOrder, boolToInt(t.IsActive),
 		t.StoriesPerRefresh, t.RefreshIntervalMinutes,
-		t.SummaryMinWords, t.SummaryMaxWords)
+		t.SummaryMinWords, t.SummaryMaxWords,
+		t.AIProvider, boolToInt(t.IsNiche))
 	if err != nil {
 		return err
 	}
@@ -93,11 +95,13 @@ func (db *DB) UpdateNewsTopic(t *models.NewsTopic) error {
 		UPDATE news_topics SET name = ?, description = ?, is_active = ?,
 		       stories_per_refresh = ?, refresh_interval_minutes = ?,
 		       summary_min_words = ?, summary_max_words = ?,
+		       ai_provider = ?, is_niche = ?,
 		       updated_at = datetime('now')
 		WHERE id = ?`,
 		t.Name, t.Description, boolToInt(t.IsActive),
 		t.StoriesPerRefresh, t.RefreshIntervalMinutes,
-		t.SummaryMinWords, t.SummaryMaxWords, t.ID)
+		t.SummaryMinWords, t.SummaryMaxWords,
+		t.AIProvider, boolToInt(t.IsNiche), t.ID)
 	return err
 }
 
@@ -142,7 +146,7 @@ func (db *DB) NewsTopicsDueForRefresh() ([]models.NewsTopic, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, description, display_order, is_active, stories_per_refresh,
 		       refresh_interval_minutes, summary_min_words, summary_max_words,
-		       last_refreshed_at, created_at, updated_at
+		       ai_provider, is_niche, last_refreshed_at, created_at, updated_at
 		FROM news_topics
 		WHERE is_active = 1
 		  AND (last_refreshed_at IS NULL
@@ -165,7 +169,8 @@ func scanNewsTopics(rows *sql.Rows) ([]models.NewsTopic, error) {
 		if err := rows.Scan(
 			&t.ID, &t.Name, &t.Description, &t.DisplayOrder, &t.IsActive,
 			&t.StoriesPerRefresh, &t.RefreshIntervalMinutes,
-			&t.SummaryMinWords, &t.SummaryMaxWords, &lastRefreshed,
+			&t.SummaryMinWords, &t.SummaryMaxWords,
+			&t.AIProvider, &t.IsNiche, &lastRefreshed,
 			&createdAt, &updatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan news topic: %w", err)
@@ -256,7 +261,7 @@ func scanNewsSources(rows *sql.Rows) ([]models.NewsSource, error) {
 
 func (db *DB) ListStoriesByNewsTopic(newsTopicID int64, limit int) ([]models.Story, error) {
 	rows, err := db.conn.Query(`
-		SELECT id, news_topic_id, title, summary, source_url, source_title, published_at, created_at
+		SELECT id, news_topic_id, title, summary, source_url, source_title, ai_provider, ai_model, published_at, created_at
 		FROM stories WHERE news_topic_id = ?
 		ORDER BY created_at DESC LIMIT ?`, newsTopicID, limit)
 	if err != nil {
@@ -268,9 +273,9 @@ func (db *DB) ListStoriesByNewsTopic(newsTopicID int64, limit int) ([]models.Sto
 
 func (db *DB) CreateStory(s *models.Story) error {
 	result, err := db.conn.Exec(`
-		INSERT INTO stories (news_topic_id, title, summary, source_url, source_title, published_at)
-		VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-		s.NewsTopicID, s.Title, s.Summary, s.SourceURL, s.SourceTitle)
+		INSERT INTO stories (news_topic_id, title, summary, source_url, source_title, ai_provider, ai_model, published_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+		s.NewsTopicID, s.Title, s.Summary, s.SourceURL, s.SourceTitle, s.AIProvider, s.AIModel)
 	if err != nil {
 		return err
 	}
@@ -298,7 +303,8 @@ func scanStories(rows *sql.Rows) ([]models.Story, error) {
 
 		if err := rows.Scan(
 			&s.ID, &s.NewsTopicID, &s.Title, &s.Summary,
-			&s.SourceURL, &s.SourceTitle, &publishedAt, &createdAt,
+			&s.SourceURL, &s.SourceTitle, &s.AIProvider, &s.AIModel,
+			&publishedAt, &createdAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan story: %w", err)
 		}

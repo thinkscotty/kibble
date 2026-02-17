@@ -78,6 +78,8 @@ func (s *Server) handleNewsTopicCreate(w http.ResponseWriter, r *http.Request) {
 		RefreshIntervalMinutes: refreshInterval,
 		SummaryMinWords:        summaryMinWords,
 		SummaryMaxWords:        summaryMaxWords,
+		AIProvider:             r.FormValue("ai_provider"),
+		IsNiche:                r.FormValue("is_niche") == "1",
 	}
 
 	if err := s.db.CreateNewsTopic(nt); err != nil {
@@ -154,6 +156,8 @@ func (s *Server) handleNewsTopicUpdate(w http.ResponseWriter, r *http.Request) {
 			nt.SummaryMaxWords = n
 		}
 	}
+	nt.AIProvider = r.FormValue("ai_provider")
+	nt.IsNiche = r.FormValue("is_niche") == "1"
 
 	if err := s.db.UpdateNewsTopic(&nt); err != nil {
 		slog.Error("Failed to update news topic", "error", err)

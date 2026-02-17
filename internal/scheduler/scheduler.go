@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/thinkscotty/kibble/internal/ai"
 	"github.com/thinkscotty/kibble/internal/database"
-	"github.com/thinkscotty/kibble/internal/gemini"
 	"github.com/thinkscotty/kibble/internal/models"
 	"github.com/thinkscotty/kibble/internal/scraper"
 	"github.com/thinkscotty/kibble/internal/similarity"
@@ -17,7 +17,7 @@ import (
 
 type Scheduler struct {
 	db      *database.DB
-	gemini  *gemini.Client
+	ai      *ai.Client
 	sim     *similarity.Checker
 	scraper *scraper.Scraper
 	locks   sync.Map // per-topic locks: topicKey -> *sync.Mutex
@@ -40,8 +40,8 @@ func (s *Scheduler) lockTopic(key string) (*sync.Mutex, bool) {
 	return nil, false
 }
 
-func New(db *database.DB, gemini *gemini.Client, sim *similarity.Checker, sc *scraper.Scraper) *Scheduler {
-	return &Scheduler{db: db, gemini: gemini, sim: sim, scraper: sc}
+func New(db *database.DB, aiClient *ai.Client, sim *similarity.Checker, sc *scraper.Scraper) *Scheduler {
+	return &Scheduler{db: db, ai: aiClient, sim: sim, scraper: sc}
 }
 
 // Run starts the scheduler loop. It checks for due topics every 60 seconds.
@@ -112,16 +112,24 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 	customInstr, _ := s.db.GetSetting("ai_custom_instructions")
 	toneInstr, _ := s.db.GetSetting("ai_tone_instructions")
 
-	facts, tokensUsed, err := s.gemini.GenerateFacts(
-		ctx, topic.Name, topic.Description,
-		customInstr, toneInstr, topic.FactsPerRefresh,
-		topic.SummaryMinWords, topic.SummaryMaxWords,
-	)
+	facts, tokensUsed, providerName, modelName, err := s.ai.GenerateFacts(ctx, ai.FactsOpts{
+		Topic:              topic.Name,
+		Description:        topic.Description,
+		CustomInstructions: customInstr,
+		ToneInstructions:   toneInstr,
+		Count:              topic.FactsPerRefresh,
+		MinWords:           topic.SummaryMinWords,
+		MaxWords:           topic.SummaryMaxWords,
+		AIProvider:         topic.AIProvider,
+		IsNiche:            topic.IsNiche,
+	})
 
 	logEntry := models.APIUsageLog{
 		TopicID:        &topic.ID,
 		FactsRequested: topic.FactsPerRefresh,
 		TokensUsed:     tokensUsed,
+		AIProvider:     providerName,
+		AIModel:        modelName,
 	}
 
 	if err != nil {
@@ -144,10 +152,12 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 
 		trigrams := s.sim.Trigrams(content)
 		fact := &models.Fact{
-			TopicID:  topic.ID,
-			Content:  content,
-			Trigrams: s.sim.TrigramsToJSON(trigrams),
-			Source:   "gemini",
+			TopicID:    topic.ID,
+			Content:    content,
+			Trigrams:   s.sim.TrigramsToJSON(trigrams),
+			Source:     providerName,
+			AIProvider: providerName,
+			AIModel:    modelName,
 		}
 		if err := s.db.CreateFact(fact); err != nil {
 			slog.Error("Failed to save fact", "error", err)
@@ -285,7 +295,7 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	// Failure count increments on each failed refresh and decrements by 1
 	// on each success (min 0). This lets occasional failures be forgiven
 	// while chronically bad sources accumulate toward the removal threshold.
-	var scrapedContent []gemini.ScrapedContent
+	var scrapedContent []ai.ScrapedContent
 	var removedSourceCount int
 	for _, result := range scrapeResults {
 		if result.Error != nil {
@@ -326,15 +336,20 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 		return
 	}
 
-	// Summarize with Gemini
+	// Summarize with AI
 	summarizeInstr, _ := s.db.GetSetting("news_summarizing_instructions")
 	toneInstr, _ := s.db.GetSetting("news_tone_instructions")
 
-	stories, _, err := s.gemini.SummarizeContent(
-		ctx, topic.Name, scrapedContent,
-		summarizeInstr, toneInstr, topic.StoriesPerRefresh,
-		topic.SummaryMinWords, topic.SummaryMaxWords,
-	)
+	stories, _, storyProvider, storyModel, err := s.ai.SummarizeContent(ctx, ai.SummarizeOpts{
+		TopicName:               topic.Name,
+		ScrapedContent:          scrapedContent,
+		SummarizingInstructions: summarizeInstr,
+		ToneInstructions:        toneInstr,
+		MaxStories:              topic.StoriesPerRefresh,
+		MinWords:                topic.SummaryMinWords,
+		MaxWords:                topic.SummaryMaxWords,
+		AIProvider:              topic.AIProvider,
+	})
 	if err != nil {
 		s.handleNewsRefreshError(newsTopicID, fmt.Errorf("summarize content: %w", err))
 		return
@@ -348,6 +363,8 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 			Summary:     story.Summary,
 			SourceURL:   story.SourceURL,
 			SourceTitle: story.SourceTitle,
+			AIProvider:  storyProvider,
+			AIModel:     storyModel,
 		}
 		if err := s.db.CreateStory(dbStory); err != nil {
 			slog.Error("Failed to create story", "error", err)
@@ -377,7 +394,13 @@ func (s *Scheduler) discoverNewsSources(ctx context.Context, newsTopicID int64) 
 
 	sourcingInstr, _ := s.db.GetSetting("news_sourcing_instructions")
 
-	sources, _, err := s.gemini.DiscoverSources(ctx, topic.Name, topic.Description, sourcingInstr)
+	sources, _, _, _, err := s.ai.DiscoverSources(ctx, ai.DiscoverOpts{
+		TopicName:            topic.Name,
+		Description:          topic.Description,
+		SourcingInstructions: sourcingInstr,
+		AIProvider:           topic.AIProvider,
+		IsNiche:              topic.IsNiche,
+	})
 	if err != nil {
 		return fmt.Errorf("discover sources: %w", err)
 	}
@@ -416,7 +439,13 @@ func (s *Scheduler) replaceRemovedSources(ctx context.Context, newsTopicID int64
 		existingURLs[src.URL] = true
 	}
 
-	discovered, _, err := s.gemini.DiscoverSources(ctx, topic.Name, topic.Description, sourcingInstr)
+	discovered, _, _, _, err := s.ai.DiscoverSources(ctx, ai.DiscoverOpts{
+		TopicName:            topic.Name,
+		Description:          topic.Description,
+		SourcingInstructions: sourcingInstr,
+		AIProvider:           topic.AIProvider,
+		IsNiche:              topic.IsNiche,
+	})
 	if err != nil {
 		slog.Error("Failed to discover replacement sources", "topic", topic.Name, "error", err)
 		return
