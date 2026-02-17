@@ -91,20 +91,38 @@ func (s *Server) authFailed(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-// requireAPIKey checks for a valid API key via Bearer token or query parameter.
+// requireAPIKey checks for a valid API key via header or query parameter.
+// Accepted methods (checked in order):
+//   - Authorization: Bearer <key>
+//   - X-API-Key: <key>
+//   - Api-Key: <key>
+//   - Query parameter: ?api_key=<key> or ?apikey=<key>
 func (s *Server) requireAPIKey(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var providedKey string
 
+		// Check Authorization: Bearer <key>
 		if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
 			providedKey = strings.TrimPrefix(auth, "Bearer ")
 		}
+		// Check X-API-Key header (common convention, used by AWS API Gateway)
+		if providedKey == "" {
+			providedKey = r.Header.Get("X-API-Key")
+		}
+		// Check Api-Key header (variation without X- prefix)
+		if providedKey == "" {
+			providedKey = r.Header.Get("Api-Key")
+		}
+		// Check query parameters
 		if providedKey == "" {
 			providedKey = r.URL.Query().Get("api_key")
 		}
+		if providedKey == "" {
+			providedKey = r.URL.Query().Get("apikey")
+		}
 
 		if providedKey == "" {
-			jsonError(w, "API key required", http.StatusUnauthorized)
+			jsonError(w, "API key required — use header 'X-API-Key', 'Authorization: Bearer <key>', or query param '?api_key=<key>'", http.StatusUnauthorized)
 			return
 		}
 

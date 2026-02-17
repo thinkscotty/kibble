@@ -29,7 +29,7 @@ themes:
     colors:
       background: "#FDF4ED"
       surface: "#FDF4ED"
-      navbar: "#449DD1"
+      navbar: "#0C2331"
       navbar_text: "#FDF4ED"
       primary: "#FF7F11"
       accent: "#594236"
