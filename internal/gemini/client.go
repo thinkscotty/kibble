@@ -24,7 +24,7 @@ type Client struct {
 
 func NewClient(sg SettingsGetter) *Client {
 	return &Client{
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: &http.Client{Timeout: 60 * time.Second},
 		db:         sg,
 	}
 }

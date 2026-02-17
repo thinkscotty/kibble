@@ -34,7 +34,7 @@ func New() *Scraper {
 	return &Scraper{
 		userAgent:      "Kibble/1.0 (AI Facts & News Dashboard; +https://github.com/thinkscotty/kibble)",
 		requestTimeout: 30 * time.Second,
-		parallelLimit:  2,
+		parallelLimit:  5,
 		redditClient:   reddit.New(),
 	}
 }
@@ -144,7 +144,7 @@ func (s *Scraper) ScrapeSource(ctx context.Context, source models.NewsSource) (*
 		return nil, fmt.Errorf("insufficient content scraped from %s", source.URL)
 	}
 
-	const maxLength = 10000
+	const maxLength = 50000
 	if len(contentStr) > maxLength {
 		contentStr = contentStr[:maxLength] + "..."
 	}
@@ -248,7 +248,7 @@ func (s *Scraper) scrapeRedditSource(ctx context.Context, source models.NewsSour
 	}
 
 	contentStr := content.String()
-	const maxLength = 10000
+	const maxLength = 50000
 	if len(contentStr) > maxLength {
 		contentStr = contentStr[:maxLength] + "..."
 	}

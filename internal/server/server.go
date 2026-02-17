@@ -63,10 +63,12 @@ func (s *Server) Start() error {
 
 	addr := fmt.Sprintf("%s:%d", s.cfg.Server.Host, s.cfg.Server.Port)
 	s.httpSrv = &http.Server{
-		Addr:         addr,
-		Handler:      handler,
-		ReadTimeout:  time.Duration(s.cfg.Server.ReadTimeoutSeconds) * time.Second,
-		WriteTimeout: time.Duration(s.cfg.Server.WriteTimeoutSeconds) * time.Second,
+		Addr:              addr,
+		Handler:           handler,
+		ReadTimeout:       time.Duration(s.cfg.Server.ReadTimeoutSeconds) * time.Second,
+		WriteTimeout:      time.Duration(s.cfg.Server.WriteTimeoutSeconds) * time.Second,
+		IdleTimeout:       time.Duration(s.cfg.Server.IdleTimeoutSeconds) * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	slog.Info("Starting server", "addr", addr)

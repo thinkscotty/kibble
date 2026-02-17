@@ -4,37 +4,65 @@ import (
 	"github.com/thinkscotty/kibble/internal/models"
 )
 
+// loadSettingsCache populates the in-memory settings cache from the database.
+func (db *DB) loadSettingsCache() error {
+	rows, err := db.conn.Query(`SELECT key, value FROM settings`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	db.cacheMu.Lock()
+	defer db.cacheMu.Unlock()
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			return err
+		}
+		db.settings[key] = value
+	}
+	return rows.Err()
+}
+
 func (db *DB) GetSetting(key string) (string, error) {
+	db.cacheMu.RLock()
+	v, ok := db.settings[key]
+	db.cacheMu.RUnlock()
+	if ok {
+		return v, nil
+	}
+	// Fallback to DB for keys not yet cached
 	var value string
 	err := db.conn.QueryRow(`SELECT value FROM settings WHERE key = ?`, key).Scan(&value)
 	if err != nil {
 		return "", err
 	}
+	db.cacheMu.Lock()
+	db.settings[key] = value
+	db.cacheMu.Unlock()
 	return value, nil
 }
 
 func (db *DB) SetSetting(key, value string) error {
 	_, err := db.conn.Exec(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))`,
 		key, value)
-	return err
+	if err != nil {
+		return err
+	}
+	db.cacheMu.Lock()
+	db.settings[key] = value
+	db.cacheMu.Unlock()
+	return nil
 }
 
 func (db *DB) GetAllSettings() (map[string]string, error) {
-	rows, err := db.conn.Query(`SELECT key, value FROM settings`)
-	if err != nil {
-		return nil, err
+	db.cacheMu.RLock()
+	defer db.cacheMu.RUnlock()
+	result := make(map[string]string, len(db.settings))
+	for k, v := range db.settings {
+		result[k] = v
 	}
-	defer rows.Close()
-
-	settings := make(map[string]string)
-	for rows.Next() {
-		var key, value string
-		if err := rows.Scan(&key, &value); err != nil {
-			return nil, err
-		}
-		settings[key] = value
-	}
-	return settings, rows.Err()
+	return result, nil
 }
 
 func (db *DB) LogAPIUsage(log models.APIUsageLog) error {

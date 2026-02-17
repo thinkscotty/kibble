@@ -90,14 +90,14 @@ func (db *DB) SearchFacts(query string, topicID *int64) ([]models.Fact, error) {
 			       f.source, f.created_at, f.updated_at
 			FROM facts f
 			WHERE f.is_archived = 0 AND f.topic_id = ? AND f.content LIKE ?
-			ORDER BY f.created_at DESC LIMIT 50`, *topicID, likeQuery)
+			ORDER BY f.created_at DESC LIMIT 200`, *topicID, likeQuery)
 	} else {
 		rows, err = db.conn.Query(`
 			SELECT f.id, f.topic_id, f.content, f.trigrams, f.is_custom, f.is_archived,
 			       f.source, f.created_at, f.updated_at
 			FROM facts f
 			WHERE f.is_archived = 0 AND f.content LIKE ?
-			ORDER BY f.created_at DESC LIMIT 50`, likeQuery)
+			ORDER BY f.created_at DESC LIMIT 200`, likeQuery)
 	}
 	if err != nil {
 		return nil, err
@@ -124,6 +124,12 @@ func (db *DB) GetFactTrigramsForTopic(topicID int64) ([]StoredTrigrams, error) {
 		result = append(result, st)
 	}
 	return result, rows.Err()
+}
+
+func (db *DB) CountFactsByTopic(topicID int64) (int, error) {
+	var count int
+	err := db.conn.QueryRow(`SELECT COUNT(*) FROM facts WHERE topic_id = ? AND is_archived = 0`, topicID).Scan(&count)
+	return count, err
 }
 
 func (db *DB) FactCounts() (total, custom, ai int, err error) {

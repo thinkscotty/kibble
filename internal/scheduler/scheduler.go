@@ -20,7 +20,24 @@ type Scheduler struct {
 	gemini  *gemini.Client
 	sim     *similarity.Checker
 	scraper *scraper.Scraper
-	mu      sync.Mutex
+	locks   sync.Map // per-topic locks: topicKey -> *sync.Mutex
+}
+
+// topicKey returns a unique key for per-topic locking.
+func topicKey(kind string, id int64) string {
+	return fmt.Sprintf("%s:%d", kind, id)
+}
+
+// lockTopic acquires a per-topic mutex, creating it if needed.
+// Returns the mutex (caller must Unlock) and true if the lock was acquired.
+// Returns nil and false if the topic is already locked (non-blocking).
+func (s *Scheduler) lockTopic(key string) (*sync.Mutex, bool) {
+	val, _ := s.locks.LoadOrStore(key, &sync.Mutex{})
+	mu := val.(*sync.Mutex)
+	if mu.TryLock() {
+		return mu, true
+	}
+	return nil, false
 }
 
 func New(db *database.DB, gemini *gemini.Client, sim *similarity.Checker, sc *scraper.Scraper) *Scheduler {
@@ -56,23 +73,36 @@ func (s *Scheduler) checkAndRefresh(ctx context.Context) {
 		slog.Debug("Cleaned up expired sessions", "count", n)
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+	// Refresh fact topics concurrently (up to 3 at a time)
 	topics, err := s.db.TopicsDueForRefresh()
 	if err != nil {
 		slog.Error("Failed to query topics due for refresh", "error", err)
-		return
-	}
-
-	for _, topic := range topics {
-		if ctx.Err() != nil {
-			return
+	} else if len(topics) > 0 {
+		sem := make(chan struct{}, 3)
+		var wg sync.WaitGroup
+		for _, topic := range topics {
+			if ctx.Err() != nil {
+				break
+			}
+			wg.Add(1)
+			go func(t models.Topic) {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+				key := topicKey("fact", t.ID)
+				mu, ok := s.lockTopic(key)
+				if !ok {
+					slog.Debug("Topic already being refreshed, skipping", "topic", t.Name)
+					return
+				}
+				defer mu.Unlock()
+				s.refreshTopic(ctx, t)
+			}(topic)
 		}
-		s.refreshTopic(ctx, topic)
+		wg.Wait()
 	}
 
-	// Check news topics due for refresh
+	// Refresh news topics concurrently (up to 2 at a time)
 	s.checkAndRefreshNews(ctx)
 }
 
@@ -143,8 +173,12 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 
 // RefreshNow triggers an immediate refresh for a single topic.
 func (s *Scheduler) RefreshNow(ctx context.Context, topicID int64) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	key := topicKey("fact", topicID)
+	mu, ok := s.lockTopic(key)
+	if !ok {
+		return fmt.Errorf("topic is already being refreshed")
+	}
+	defer mu.Unlock()
 
 	topic, err := s.db.GetTopic(topicID)
 	if err != nil {
@@ -163,14 +197,32 @@ func (s *Scheduler) checkAndRefreshNews(ctx context.Context) {
 		return
 	}
 
+	if len(newsTopics) == 0 {
+		return
+	}
+
+	sem := make(chan struct{}, 2)
+	var wg sync.WaitGroup
 	for _, nt := range newsTopics {
 		if ctx.Err() != nil {
-			return
+			break
 		}
-		s.safeRefreshNewsTopic(ctx, nt.ID)
-		// Stagger refreshes to avoid API overload
-		time.Sleep(30 * time.Second)
+		wg.Add(1)
+		go func(id int64) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			key := topicKey("news", id)
+			mu, ok := s.lockTopic(key)
+			if !ok {
+				slog.Debug("News topic already being refreshed, skipping", "topic_id", id)
+				return
+			}
+			defer mu.Unlock()
+			s.safeRefreshNewsTopic(ctx, id)
+		}(nt.ID)
 	}
+	wg.Wait()
 }
 
 func (s *Scheduler) safeRefreshNewsTopic(ctx context.Context, newsTopicID int64) {
@@ -404,15 +456,24 @@ func (s *Scheduler) handleNewsRefreshError(newsTopicID int64, err error) {
 
 // RefreshNewsNow triggers an immediate news topic refresh.
 func (s *Scheduler) RefreshNewsNow(ctx context.Context, newsTopicID int64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	key := topicKey("news", newsTopicID)
+	mu, ok := s.lockTopic(key)
+	if !ok {
+		slog.Warn("News topic is already being refreshed", "topic_id", newsTopicID)
+		return
+	}
+	defer mu.Unlock()
 	s.safeRefreshNewsTopic(ctx, newsTopicID)
 }
 
 // DiscoverSourcesNow triggers immediate source discovery for a news topic.
 func (s *Scheduler) DiscoverSourcesNow(ctx context.Context, newsTopicID int64) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	key := topicKey("news", newsTopicID)
+	mu, ok := s.lockTopic(key)
+	if !ok {
+		return fmt.Errorf("news topic is already being refreshed")
+	}
+	defer mu.Unlock()
 	return s.discoverNewsSources(ctx, newsTopicID)
 }
 

@@ -19,6 +19,7 @@ type ServerConfig struct {
 	Port                int    `yaml:"port"`
 	ReadTimeoutSeconds  int    `yaml:"read_timeout_seconds"`
 	WriteTimeoutSeconds int    `yaml:"write_timeout_seconds"`
+	IdleTimeoutSeconds  int    `yaml:"idle_timeout_seconds"`
 }
 
 type DatabaseConfig struct {
@@ -41,6 +42,7 @@ func DefaultConfig() Config {
 			Port:                8080,
 			ReadTimeoutSeconds:  30,
 			WriteTimeoutSeconds: 30,
+			IdleTimeoutSeconds:  120,
 		},
 		Database: DatabaseConfig{
 			Path: "./kibble.db",

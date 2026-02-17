@@ -54,3 +54,7 @@ Run a single test: `go test -v -run TestFunctionName ./internal/package/`
 - Pure-Go SQLite enables cross-compilation with `GOOS=linux GOARCH=arm64` from any host.
 - Binary uses `-ldflags "-s -w"` to strip debug info for smaller size.
 - No CGO required.
+
+## Github Instructions
+- When commiting new changes to Github, always look for and include theme changes in themes.yaml
+- 

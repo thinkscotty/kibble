@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/thinkscotty/kibble/internal/apikey"
@@ -13,8 +14,10 @@ import (
 )
 
 type DB struct {
-	conn *sql.DB
-	path string
+	conn     *sql.DB
+	path     string
+	cacheMu  sync.RWMutex
+	settings map[string]string
 }
 
 func New(path string) (*DB, error) {
@@ -31,21 +34,27 @@ func New(path string) (*DB, error) {
 		}
 	}
 
-	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)", path)
+	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)&_pragma=cache_size(-20000)&_pragma=mmap_size(268435456)", path)
 	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	conn.SetMaxOpenConns(2)
+	conn.SetMaxOpenConns(8)
+	conn.SetMaxIdleConns(4)
+	conn.SetConnMaxLifetime(30 * time.Minute)
 
 	if err := conn.Ping(); err != nil {
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
-	db := &DB{conn: conn, path: path}
+	db := &DB{conn: conn, path: path, settings: make(map[string]string)}
 	if err := db.migrate(); err != nil {
 		return nil, fmt.Errorf("migrate database: %w", err)
+	}
+
+	if err := db.loadSettingsCache(); err != nil {
+		return nil, fmt.Errorf("load settings cache: %w", err)
 	}
 
 	return db, nil

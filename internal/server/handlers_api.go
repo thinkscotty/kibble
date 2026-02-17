@@ -24,11 +24,11 @@ func (s *Server) handleAPITopics(w http.ResponseWriter, r *http.Request) {
 
 	var result []topicResp
 	for _, t := range topics {
-		facts, _ := s.db.ListFactsByTopic(t.ID, 1000)
+		count, _ := s.db.CountFactsByTopic(t.ID)
 		result = append(result, topicResp{
 			ID:        t.ID,
 			Name:      t.Name,
-			FactCount: len(facts),
+			FactCount: count,
 		})
 	}
 
