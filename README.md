@@ -1,6 +1,6 @@
 # Kibble
 
-Kibble is a lightweight, AI-powered facts generator web application. It uses Google's Gemini Flash 2.5 AI to generate interesting facts about topics you choose, caches them in SQLite, and displays them through a clean, themeable web interface. Facts are also served to external client devices (LED matrices, smart displays) via a JSON API.
+Kibble is a lightweight, AI-powered facts and news dashboard. It supports multiple AI providers — Google Gemini (cloud) and Ollama (local) — to generate interesting facts and curate news about topics you choose. Everything is cached in SQLite and displayed through a clean, themeable web interface. Facts are also served to external client devices (LED matrices, smart displays) via a JSON API.
 
 Deploys as a single binary with no external dependencies.
 
@@ -17,9 +17,13 @@ Kibble automatically refreshes facts on a schedule you set, and it's smart enoug
 ## Requirements
 
 - A server or computer to run Kibble on (VPS, Raspberry Pi 3B+, or any Linux/macOS machine)
-- A free Google Gemini API key (instructions below)
+- At least one AI provider:
+  - **Google Gemini** (cloud) — free API key, no hardware needed
+  - **Ollama** (local) — runs on your own hardware, no API key needed
 
-## Getting Your Gemini API Key (Free)
+## AI Provider Setup
+
+### Option A: Google Gemini (Cloud)
 
 1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
 2. Sign in with your Google account
@@ -27,6 +31,16 @@ Kibble automatically refreshes facts on a schedule you set, and it's smart enoug
 4. Copy the key — you'll paste it into Kibble's Settings page
 
 The free tier is generous and more than enough for personal use.
+
+### Option B: Ollama (Local / Self-Hosted)
+
+1. Install Ollama from [ollama.com](https://ollama.com)
+2. Pull a model: `ollama pull mistral-nemo` (or `gemma3`, `llama3.1`, etc.)
+3. Ollama runs on `http://localhost:11434` by default
+
+Ollama keeps your data fully local — no API keys, no cloud calls. You can also run Ollama on a separate machine and point Kibble to it via the Settings page.
+
+> **Hardware note:** Local models need sufficient RAM. 12B parameter models (Mistral Nemo, Gemma 3) need ~8GB RAM. Smaller models work on less. Generation is slower than cloud APIs (~3-4 tokens/second on CPU).
 
 ## Installation
 
@@ -140,8 +154,11 @@ All of these have sensible defaults, so the config file is entirely optional. Yo
 2. Set a username and password (minimum 8 characters)
 3. Log in with your new credentials
 4. Go to the **Settings** page
-5. Paste your Gemini API key and click "Test Key" to verify it works
-6. Click "Save Settings"
+5. Choose your AI provider (Gemini or Ollama)
+6. Configure your provider:
+   - **Gemini**: Paste your API key and click "Test Key"
+   - **Ollama**: Enter the server URL (default: `http://localhost:11434`), click "Test Connection", then select a model from the dropdown
+7. Click "Save Settings"
 
 ### Adding Topics
 
@@ -150,7 +167,9 @@ All of these have sensible defaults, so the config file is entirely optional. Yo
 3. Optionally add a description to guide the AI (e.g., "Focus on recent discoveries and missions")
 4. Set how many facts to generate per refresh (default: 5)
 5. Set the refresh interval in minutes (default: 1440 = 24 hours)
-6. Click "Add Topic"
+6. Optionally choose an **AI Provider** per-topic to override the global default
+7. Check **Niche Topic** if the topic is specialized — this enables Wikipedia research to enrich AI prompts with reference material
+8. Click "Add Topic"
 
 ### Viewing Facts
 
@@ -177,13 +196,37 @@ On the **Settings** page you can give the AI custom instructions:
 - **Custom Instructions**: Guide what kind of facts to generate (e.g., "Focus on lesser-known facts", "Include recent discoveries")
 - **Tone & Style**: Control how facts are written (e.g., "Keep facts concise, under 2 sentences", "Use a casual, friendly tone")
 
+### Multi-Provider AI
+
+Kibble supports two AI providers that can be mixed and matched:
+
+| Provider | Type | Speed | Privacy | Cost |
+|----------|------|-------|---------|------|
+| **Gemini** | Cloud | Fast (~1-2s) | Data sent to Google | Free tier available |
+| **Ollama** | Local | Slower (~30-60s for 12B models) | Fully private | Free (your hardware) |
+
+- Set a **global default** on the Settings page
+- **Override per-topic** — e.g., use Gemini for most topics but Ollama for sensitive ones
+- The dashboard shows which AI generated each fact and story
+
+### Niche Topics & Wikipedia Research
+
+When you mark a topic as **Niche**, Kibble enriches AI prompts with Wikipedia research before generating content:
+
+1. The AI generates targeted search queries for the topic
+2. Kibble searches Wikipedia and retrieves article summaries
+3. The summaries are injected into the AI prompt as reference material
+4. The AI uses this context to produce more accurate, detailed output
+
+This is useful for specialized topics where the AI might otherwise lack depth (e.g., "Magnetars", "Pu-erh Tea Aging", "Brutalist Architecture in Yugoslavia").
+
 ## External Device API
 
 Kibble provides a JSON API for external devices like LED matrix displays, smart screens, and custom clients.
 
 ### Authentication
 
-All API endpoints require your Gemini API key. You can provide it in two ways:
+All API endpoints require an API key. You can provide it in two ways:
 
 **Query parameter** (simplest for devices):
 ```
@@ -195,7 +238,7 @@ GET /api/v1/facts/random?api_key=YOUR_API_KEY
 Authorization: Bearer YOUR_API_KEY
 ```
 
-The API key is the same Gemini API key you entered on the Settings page.
+The API key is shown on the Settings page. Kibble also accepts your Gemini API key for backward compatibility.
 
 ### Endpoints
 
@@ -464,8 +507,10 @@ sudo systemctl start kibble
   1. The running user has write permission to the data directory: `sudo chown $USER:$USER /var/lib/kibble`
   2. If using systemd, `WorkingDirectory=` in the service file points to a writable directory
   3. Set `database.path` in `config.yaml` to point to your data directory or file: `database: { path: "/var/lib/kibble" }`
-- **"API key not configured"**: Go to Settings and enter your Gemini API key
-- **Facts not generating**: Click "Test Key" on the Settings page to verify your API key works
+- **"API key not configured"**: Go to Settings and enter your Gemini API key (if using Gemini)
+- **Facts not generating**: Check your AI provider configuration on the Settings page — test your Gemini key or Ollama connection
+- **Ollama connection failed**: Make sure Ollama is running (`ollama serve`) and the URL in Settings is correct. If Ollama is on another machine, use that machine's IP address instead of `localhost`
+- **Ollama generation is slow**: This is normal for local models. 12B models take ~30-60 seconds per request on CPU. Kibble uses a 5-minute timeout to accommodate this
 - **Page not loading**: Make sure nothing else is using port 8080, or change the port in `config.yaml`
 - **Can't access from another device**: Make sure you're using the server's IP address (not `localhost`) and that both devices are on the same network
 
