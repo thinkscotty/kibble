@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	kibble "github.com/thinkscotty/kibble"
 	"github.com/thinkscotty/kibble/internal/ai"
@@ -20,6 +21,7 @@ import (
 	"github.com/thinkscotty/kibble/internal/scraper"
 	"github.com/thinkscotty/kibble/internal/server"
 	"github.com/thinkscotty/kibble/internal/similarity"
+	"github.com/thinkscotty/kibble/internal/updater"
 	"github.com/thinkscotty/kibble/internal/wikipedia"
 )
 
@@ -32,10 +34,16 @@ func main() {
 	configPath := flag.String("config", "config.yaml", "Path to configuration file")
 	themesPath := flag.String("themes", "themes.yaml", "Path to themes file")
 	showVersion := flag.Bool("version", false, "Show version and exit")
+	doUpdate := flag.Bool("update", false, "Check for updates and install if available")
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Printf("Kibble %s (built %s)\n", version, buildTime)
+		os.Exit(0)
+	}
+
+	if *doUpdate {
+		runUpdate(version)
 		os.Exit(0)
 	}
 
@@ -112,4 +120,35 @@ func main() {
 		slog.Error("Server error", "error", err)
 		os.Exit(1)
 	}
+}
+
+func runUpdate(currentVersion string) {
+	fmt.Printf("Kibble %s — checking for updates...\n", currentVersion)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	info, err := updater.CheckForUpdate(ctx, currentVersion)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Update check failed: %s\n", err)
+		os.Exit(1)
+	}
+	if info == nil {
+		fmt.Println("Already running the latest version.")
+		return
+	}
+
+	fmt.Printf("Update available: %s → %s\n", currentVersion, info.TagName)
+	fmt.Printf("Binary: %s (%s)\n", info.AssetName, updater.FormatBytes(info.AssetSize))
+	fmt.Printf("Downloading...\n")
+
+	result, err := updater.DownloadAndInstall(ctx, info, currentVersion)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Installation failed: %s\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Updated %s → %s successfully.\n", result.OldVersion, result.NewVersion)
+	fmt.Println("Restart the service to use the new version:")
+	fmt.Println("  sudo systemctl restart kibble")
 }
