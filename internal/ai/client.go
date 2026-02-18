@@ -86,6 +86,10 @@ func (c *Client) GenerateFacts(ctx context.Context, opts FactsOpts) ([]string, i
 	}
 
 	facts := ParseFactsFromText(resp.Content)
+	if len(facts) == 0 {
+		return nil, resp.TokensUsed, resp.Provider, resp.Model,
+			fmt.Errorf("empty response from %s: no parseable facts returned", provider.Name())
+	}
 	return facts, resp.TokensUsed, resp.Provider, resp.Model, nil
 }
 

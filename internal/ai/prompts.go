@@ -189,10 +189,31 @@ Topic: %s
 		sb.WriteString(fmt.Sprintf("Each story summary should be at most %d words long.\n\n", maxWords))
 	}
 
+	// Cap content to prevent prompt explosion.
+	// Each source can hold up to 50K chars from scraping; without limits the
+	// total prompt can exceed model context windows, causing timeouts or errors.
+	const maxPerSource = 10000
+	const maxTotalContent = 60000
+
 	sb.WriteString("Scraped Content:\n")
+	totalChars := 0
 	for i, content := range scrapedContent {
+		c := content.Content
+		if len(c) > maxPerSource {
+			c = c[:maxPerSource] + "\n[... content truncated ...]"
+		}
+		if totalChars+len(c) > maxTotalContent {
+			remaining := maxTotalContent - totalChars
+			if remaining > 500 {
+				c = c[:remaining] + "\n[... content truncated ...]"
+			} else {
+				sb.WriteString(fmt.Sprintf("\n[... %d additional sources omitted due to content size limit ...]\n", len(scrapedContent)-i))
+				break
+			}
+		}
 		sb.WriteString(fmt.Sprintf("\n--- Source %d: %s ---\nURL: %s\n%s\n",
-			i+1, content.SourceName, content.URL, content.Content))
+			i+1, content.SourceName, content.URL, c))
+		totalChars += len(c)
 	}
 
 	sb.WriteString(fmt.Sprintf(`

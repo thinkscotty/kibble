@@ -116,7 +116,10 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 	customInstr, _ := s.db.GetSetting("ai_custom_instructions")
 	toneInstr, _ := s.db.GetSetting("ai_tone_instructions")
 
-	facts, tokensUsed, providerName, modelName, err := s.ai.GenerateFacts(ctx, ai.FactsOpts{
+	aiCtx, aiCancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer aiCancel()
+
+	facts, tokensUsed, providerName, modelName, err := s.ai.GenerateFacts(aiCtx, ai.FactsOpts{
 		Topic:              topic.Name,
 		Description:        topic.Description,
 		CustomInstructions: customInstr,
@@ -366,7 +369,10 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	// Fetch recent story titles for deduplication context
 	existingTitles, _ := s.db.GetRecentStoryTitles(newsTopicID, 30)
 
-	stories, _, storyProvider, storyModel, err := s.ai.SummarizeContent(ctx, ai.SummarizeOpts{
+	sumCtx, sumCancel := context.WithTimeout(ctx, 8*time.Minute)
+	defer sumCancel()
+
+	stories, _, storyProvider, storyModel, err := s.ai.SummarizeContent(sumCtx, ai.SummarizeOpts{
 		TopicName:               topic.Name,
 		ScrapedContent:          scrapedContent,
 		SummarizingInstructions: summarizeInstr,
@@ -431,7 +437,10 @@ func (s *Scheduler) discoverNewsSources(ctx context.Context, newsTopicID int64) 
 	// Mine Reddit subreddits for frequently-shared external sources
 	communityDomains := s.mineRedditDomains(ctx, newsTopicID, topic.Name, topic.Description)
 
-	sources, _, _, _, err := s.ai.DiscoverSources(ctx, ai.DiscoverOpts{
+	discoverCtx, discoverCancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer discoverCancel()
+
+	sources, _, _, _, err := s.ai.DiscoverSources(discoverCtx, ai.DiscoverOpts{
 		TopicName:            topic.Name,
 		Description:          topic.Description,
 		SourcingInstructions: sourcingInstr,
@@ -495,7 +504,10 @@ func (s *Scheduler) replaceRemovedSources(ctx context.Context, newsTopicID int64
 		existingURLs[src.URL] = true
 	}
 
-	discovered, _, _, _, err := s.ai.DiscoverSources(ctx, ai.DiscoverOpts{
+	replaceCtx, replaceCancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer replaceCancel()
+
+	discovered, _, _, _, err := s.ai.DiscoverSources(replaceCtx, ai.DiscoverOpts{
 		TopicName:            topic.Name,
 		Description:          topic.Description,
 		SourcingInstructions: sourcingInstr,
@@ -655,14 +667,20 @@ func classifyError(err error) string {
 		return "scrape_error"
 	case strings.Contains(msg, "failed to parse") || strings.Contains(msg, "JSON"):
 		return "parse_error"
-	case strings.Contains(msg, "summarize content"):
-		return "summarize_error"
 	case strings.Contains(msg, "status 429") || strings.Contains(msg, "rate limit"):
 		return "rate_limited"
 	case strings.Contains(msg, "status 401") || strings.Contains(msg, "status 403") || strings.Contains(msg, "API key"):
 		return "auth_error"
+	case strings.Contains(msg, "status 400"):
+		return "bad_request"
+	case strings.Contains(msg, "status 5"):
+		return "server_error"
+	case strings.Contains(msg, "empty response") || strings.Contains(msg, "no parseable facts"):
+		return "empty_response"
 	case strings.Contains(msg, "connection refused") || strings.Contains(msg, "no such host") || strings.Contains(msg, "dial tcp"):
 		return "connection_error"
+	case strings.Contains(msg, "summarize content"):
+		return "summarize_error"
 	case strings.Contains(msg, "panic"):
 		return "panic"
 	default:

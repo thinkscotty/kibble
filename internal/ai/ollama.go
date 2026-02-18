@@ -75,7 +75,7 @@ type OllamaProvider struct {
 // NewOllamaProvider creates an Ollama provider.
 func NewOllamaProvider(sg SettingsGetter) *OllamaProvider {
 	return &OllamaProvider{
-		httpClient: &http.Client{Timeout: 5 * time.Minute},
+		httpClient: &http.Client{Timeout: 10 * time.Minute},
 		settings:   sg,
 	}
 }

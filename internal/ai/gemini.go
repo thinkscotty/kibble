@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const geminiBaseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+const geminiAPIBase = "https://generativelanguage.googleapis.com/v1beta/models/"
 
 // Gemini API request/response types (unexported).
 
@@ -64,11 +64,21 @@ func NewGeminiProvider(sg SettingsGetter) *GeminiProvider {
 
 func (g *GeminiProvider) Name() string { return "gemini" }
 
+func (g *GeminiProvider) model() string {
+	model, _ := g.settings.GetSetting("gemini_model")
+	if model == "" {
+		model = "gemini-2.5-flash"
+	}
+	return model
+}
+
 func (g *GeminiProvider) Chat(ctx context.Context, req ChatRequest) (*ChatResponse, error) {
 	apiKey, err := g.settings.GetSetting("gemini_api_key")
 	if err != nil || apiKey == "" {
 		return nil, fmt.Errorf("gemini API key not configured — set it in Settings")
 	}
+
+	model := g.model()
 
 	// Build the prompt from messages (Gemini uses a single content block)
 	prompt := messagesToPrompt(req.Messages)
@@ -88,7 +98,7 @@ func (g *GeminiProvider) Chat(ctx context.Context, req ChatRequest) (*ChatRespon
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := geminiBaseURL + "?key=" + apiKey
+	url := geminiAPIBase + model + ":generateContent?key=" + apiKey
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -128,7 +138,7 @@ func (g *GeminiProvider) Chat(ctx context.Context, req ChatRequest) (*ChatRespon
 	return &ChatResponse{
 		Content:    content,
 		TokensUsed: tokensUsed,
-		Model:      "gemini-2.5-flash",
+		Model:      model,
 		Provider:   "gemini",
 	}, nil
 }
@@ -145,7 +155,7 @@ func (g *GeminiProvider) TestAPIKey(ctx context.Context, apiKey string) error {
 	}
 
 	jsonData, _ := json.Marshal(body)
-	url := geminiBaseURL + "?key=" + apiKey
+	url := geminiAPIBase + g.model() + ":generateContent?key=" + apiKey
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(jsonData))
 	if err != nil {
 		return err
