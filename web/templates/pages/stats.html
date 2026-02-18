@@ -136,7 +136,7 @@
                     <th>Topic</th>
                     <th>Type</th>
                     <th>Status</th>
-                    <th>Error Type</th>
+                    <th>Error</th>
                     <th>Duration</th>
                     <th>Provider</th>
                     <th>Items</th>
@@ -158,12 +158,14 @@
                         {{if eq .Status "success"}}
                             <span class="badge badge-active">OK</span>
                         {{else}}
-                            <span class="badge badge-error" title="{{.ErrorMessage}}">Error</span>
+                            <span class="badge badge-error">Error</span>
                         {{end}}
                     </td>
                     <td>
-                        {{if .ErrorType}}
-                            <span class="text-sm">{{.ErrorType}}</span>
+                        {{if .ErrorMessage}}
+                            <span class="text-sm text-error" title="{{.ErrorMessage}}" style="max-width: 250px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;">{{.ErrorMessage}}</span>
+                        {{else if .ErrorType}}
+                            <span class="text-sm text-muted">{{.ErrorType}}</span>
                         {{else}}
                             <span class="text-muted text-sm">—</span>
                         {{end}}

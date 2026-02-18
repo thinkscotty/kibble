@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -135,7 +136,12 @@ func (o *OllamaProvider) Chat(ctx context.Context, req ChatRequest) (*ChatRespon
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("ollama returned status %d: %s", resp.StatusCode, string(respBody))
+		errMsg := extractOllamaError(respBody)
+		if errMsg == "" {
+			errMsg = string(respBody)
+		}
+		slog.Error("Ollama API error", "status", resp.StatusCode, "model", model, "error", errMsg)
+		return nil, fmt.Errorf("ollama returned status %d: %s", resp.StatusCode, errMsg)
 	}
 
 	var chatResp ollamaChatResponse
@@ -230,4 +236,29 @@ func TestConnection(ctx context.Context, baseURL string) error {
 		return fmt.Errorf("Ollama returned status %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// extractOllamaError parses Ollama's JSON error responses to extract a human-readable message.
+// Ollama can return either {"error":"message"} or {"error":{"message":"text","type":"api_error"}}.
+func extractOllamaError(body []byte) string {
+	// Try flat format: {"error": "message string"}
+	var flat struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(body, &flat) == nil && flat.Error != "" {
+		return flat.Error
+	}
+
+	// Try nested format: {"error": {"message": "...", "type": "..."}}
+	var nested struct {
+		Error struct {
+			Message string `json:"message"`
+			Type    string `json:"type"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(body, &nested) == nil && nested.Error.Message != "" {
+		return nested.Error.Message
+	}
+
+	return ""
 }

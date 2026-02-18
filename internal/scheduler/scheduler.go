@@ -657,6 +657,8 @@ func classifyError(err error) string {
 	switch {
 	case strings.Contains(msg, "context deadline exceeded") || strings.Contains(msg, "context canceled"):
 		return "timeout"
+	case strings.Contains(msg, "model") && strings.Contains(msg, "not found"):
+		return "model_not_found"
 	case strings.Contains(msg, "no sources available"):
 		return "no_sources"
 	case strings.Contains(msg, "failed to scrape any content") || strings.Contains(msg, "insufficient content"):
@@ -673,6 +675,8 @@ func classifyError(err error) string {
 		return "auth_error"
 	case strings.Contains(msg, "status 400"):
 		return "bad_request"
+	case strings.Contains(msg, "status 404"):
+		return "not_found"
 	case strings.Contains(msg, "status 5"):
 		return "server_error"
 	case strings.Contains(msg, "empty response") || strings.Contains(msg, "no parseable facts"):

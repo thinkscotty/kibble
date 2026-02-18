@@ -132,8 +132,14 @@ func (c *Client) DiscoverSources(ctx context.Context, opts DiscoverOpts) ([]Disc
 
 	var sources []DiscoveredSource
 	if err := json.Unmarshal([]byte(responseText), &sources); err != nil {
-		return nil, resp.TokensUsed, resp.Provider, resp.Model,
-			fmt.Errorf("failed to parse sources JSON from %s: %w (response: %s)", provider.Name(), err, responseText)
+		// AI sometimes returns a single object instead of an array — try unwrapping
+		var single DiscoveredSource
+		if err2 := json.Unmarshal([]byte(responseText), &single); err2 == nil && single.URL != "" {
+			sources = []DiscoveredSource{single}
+		} else {
+			return nil, resp.TokensUsed, resp.Provider, resp.Model,
+				fmt.Errorf("failed to parse sources JSON from %s: %w (response: %.500s)", provider.Name(), err, responseText)
+		}
 	}
 
 	return sources, resp.TokensUsed, resp.Provider, resp.Model, nil
@@ -171,8 +177,14 @@ func (c *Client) SummarizeContent(ctx context.Context, opts SummarizeOpts) ([]Su
 
 	var stories []SummarizedStory
 	if err := json.Unmarshal([]byte(responseText), &stories); err != nil {
-		return nil, resp.TokensUsed, resp.Provider, resp.Model,
-			fmt.Errorf("failed to parse stories JSON from %s: %w (response: %s)", provider.Name(), err, responseText)
+		// AI sometimes returns a single object instead of an array — try unwrapping
+		var single SummarizedStory
+		if err2 := json.Unmarshal([]byte(responseText), &single); err2 == nil && single.Title != "" {
+			stories = []SummarizedStory{single}
+		} else {
+			return nil, resp.TokensUsed, resp.Provider, resp.Model,
+				fmt.Errorf("failed to parse stories JSON from %s: %w (response: %.500s)", provider.Name(), err, responseText)
+		}
 	}
 
 	return stories, resp.TokensUsed, resp.Provider, resp.Model, nil
