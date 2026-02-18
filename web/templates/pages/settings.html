@@ -73,6 +73,7 @@
                 <select id="ollama_model" name="ollama_model" class="form-input"
                         hx-get="/settings/ollama/models"
                         hx-trigger="load"
+                        hx-target="this"
                         hx-swap="innerHTML"
                         hx-include="[name='ollama_url']">
                     <option value="{{index .Settings "ollama_model"}}">{{index .Settings "ollama_model"}}</option>
