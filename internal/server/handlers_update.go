@@ -90,8 +90,25 @@ func (s *Server) handleUpdateInstall(w http.ResponseWriter, r *http.Request) {
 		<p class="text-muted text-sm" style="margin-top: 0.5rem;">
 			Updated from %s to %s. Restarting service...
 		</p>
-		<p class="text-muted text-sm">Please wait while the service restarts (this may take 10-15 seconds).</p>
-		<p class="text-muted text-sm">The page will reload automatically when ready.</p>
+		<p class="text-muted text-sm" id="restart-status">Waiting for restart...</p>
+		<script>
+		(function() {
+			var status = document.getElementById('restart-status');
+			var dots = 0;
+			var timer = setInterval(function() {
+				dots = (dots + 1) %% 4;
+				status.textContent = 'Waiting for restart' + '.'.repeat(dots);
+			}, 500);
+			setTimeout(function poll() {
+				fetch(window.location.href, {method: 'HEAD', cache: 'no-store'})
+					.then(function(r) {
+						if (r.ok) { clearInterval(timer); window.location.reload(); }
+						else { setTimeout(poll, 2000); }
+					})
+					.catch(function() { setTimeout(poll, 2000); });
+			}, 5000);
+		})();
+		</script>
 	</div>`,
 		template.HTMLEscapeString(result.OldVersion),
 		template.HTMLEscapeString(result.NewVersion),

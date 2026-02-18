@@ -133,7 +133,14 @@ func (s *Server) handleOllamaModels(w http.ResponseWriter, r *http.Request) {
 	models, err := s.ai.ListOllamaModels(r.Context())
 	if err != nil {
 		slog.Error("Failed to list Ollama models", "error", err)
-		w.Write([]byte(`<option value="">Failed to load models</option>`))
+		// Keep the current saved model as the selected option so the dropdown isn't empty
+		currentModel, _ := s.db.GetSetting("ollama_model")
+		if currentModel != "" {
+			fmt.Fprintf(w, `<option value="%s" selected>%s (offline)</option>`,
+				template.HTMLEscapeString(currentModel), template.HTMLEscapeString(currentModel))
+		} else {
+			w.Write([]byte(`<option value="">Failed to load models</option>`))
+		}
 		return
 	}
 
@@ -149,7 +156,17 @@ func (s *Server) handleOllamaModels(w http.ResponseWriter, r *http.Request) {
 		if m.Name == currentModel {
 			selected = " selected"
 		}
-		fmt.Fprintf(w, `<option value="%s"%s>%s</option>`, template.HTMLEscapeString(m.Name), selected, template.HTMLEscapeString(m.Name))
+		// Show parameter size and family for easier model comparison
+		label := m.Name
+		if m.ParameterSize != "" {
+			label += " (" + m.ParameterSize
+			if m.Family != "" {
+				label += ", " + m.Family
+			}
+			label += ")"
+		}
+		fmt.Fprintf(w, `<option value="%s"%s>%s</option>`,
+			template.HTMLEscapeString(m.Name), selected, template.HTMLEscapeString(label))
 	}
 }
 

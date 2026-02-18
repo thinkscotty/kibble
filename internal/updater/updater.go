@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -187,29 +188,114 @@ func DownloadAndInstall(ctx context.Context, info *ReleaseInfo, currentVersion s
 	}, nil
 }
 
-// RestartService attempts to restart the kibble systemd service.
+// RestartService attempts to restart the service using multiple strategies.
+// It tries them in order until one succeeds:
+//  1. systemctl restart <detected-unit> (auto-detected from /proc/self/cgroup)
+//  2. systemctl restart kibble (well-known service name)
+//  3. service kibble restart (SysV init compatibility)
+//  4. Self-exec: replace the current process with the new binary (works without any service manager)
+//  5. os.Exit(0): exit and rely on the service manager's Restart=always directive
 func RestartService() error {
-	if path, err := exec.LookPath("systemctl"); err == nil {
-		slog.Info("Restarting via systemctl", "service", "kibble")
-		cmd := exec.Command(path, "restart", "kibble")
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			slog.Warn("systemctl restart failed, falling back to process exit",
-				"error", err, "output", string(output))
-		} else {
-			slog.Info("systemctl restart succeeded")
+	// Strategy 1: Detect the systemd unit managing this process and restart it
+	if unit := detectSystemdUnit(); unit != "" {
+		slog.Info("Detected systemd unit", "unit", unit)
+		if trySystemctl("restart", unit) {
 			return nil
 		}
-	} else {
-		slog.Info("systemctl not found, using process exit for restart")
 	}
 
-	// Fallback: exit cleanly and let systemd restart us
-	// This works with Restart=always in the systemd service
-	slog.Info("Exiting process to trigger systemd restart")
-	time.Sleep(100 * time.Millisecond) // Brief delay to flush logs
+	// Strategy 2: Try well-known service name
+	if trySystemctl("restart", "kibble") {
+		return nil
+	}
+
+	// Strategy 3: SysV init compatibility (Debian/Ubuntu legacy, some containers)
+	if path, err := exec.LookPath("service"); err == nil {
+		slog.Info("Trying SysV service restart")
+		cmd := exec.Command(path, "kibble", "restart")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			slog.Warn("SysV service restart failed", "error", err, "output", string(output))
+		} else {
+			slog.Info("SysV service restart succeeded")
+			return nil
+		}
+	}
+
+	// Strategy 4: Self-exec — replace this process with the new binary.
+	// This works regardless of init system. The new binary starts fresh with
+	// the same PID, arguments, and environment. syscall.Exec is Unix-only;
+	// on Windows it returns an error and we fall through.
+	execPath, err := os.Executable()
+	if err == nil {
+		execPath, _ = filepath.EvalSymlinks(execPath)
+		slog.Info("Attempting self-exec restart", "binary", execPath, "args", os.Args)
+		// syscall.Exec replaces the process image — if it succeeds, this line
+		// is the last thing the old process ever runs. The new binary starts
+		// from main() with the same PID.
+		if err := syscall.Exec(execPath, os.Args, os.Environ()); err != nil {
+			slog.Warn("Self-exec failed", "error", err)
+		}
+	}
+
+	// Strategy 5: Exit cleanly and hope the service manager restarts us.
+	// Works with systemd Restart=always, Docker restart policies, etc.
+	slog.Info("Exiting process for service manager restart")
+	time.Sleep(100 * time.Millisecond) // flush logs
 	os.Exit(0)
 	return nil
+}
+
+// trySystemctl attempts to run "systemctl <action> <unit>" and returns true on success.
+func trySystemctl(action, unit string) bool {
+	// Try PATH lookup first, then fall back to common absolute paths.
+	// systemd services often have a restricted PATH that may not include /usr/bin.
+	path, err := exec.LookPath("systemctl")
+	if err != nil {
+		for _, p := range []string{"/usr/bin/systemctl", "/bin/systemctl"} {
+			if _, serr := os.Stat(p); serr == nil {
+				path = p
+				break
+			}
+		}
+	}
+	if path == "" {
+		return false
+	}
+
+	slog.Info("Trying systemctl restart", "path", path, "unit", unit)
+	cmd := exec.Command(path, action, unit)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		slog.Warn("systemctl restart failed", "unit", unit, "error", err, "output", string(output))
+		return false
+	}
+	slog.Info("systemctl restart succeeded", "unit", unit)
+	return true
+}
+
+// detectSystemdUnit reads /proc/self/cgroup to find the systemd service unit
+// managing this process. Returns the unit name (e.g. "kibble.service") or "".
+func detectSystemdUnit() string {
+	data, err := os.ReadFile("/proc/self/cgroup")
+	if err != nil {
+		return "" // not Linux, or no cgroup info
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		// cgroup v2: "0::/system.slice/kibble.service"
+		// cgroup v1: "1:name=systemd:/system.slice/kibble.service"
+		parts := strings.SplitN(line, ":", 3)
+		if len(parts) < 3 {
+			continue
+		}
+		cgpath := parts[2]
+		segments := strings.Split(cgpath, "/")
+		for _, seg := range segments {
+			if strings.HasSuffix(seg, ".service") {
+				return seg
+			}
+		}
+	}
+	return ""
 }
 
 // matchAsset finds the GitHub release asset matching the current platform.

@@ -193,8 +193,11 @@ func ListModels(ctx context.Context, baseURL string) ([]OllamaModel, error) {
 
 	models := make([]OllamaModel, len(tagsResp.Models))
 	for i, m := range tagsResp.Models {
+		// Strip ":latest" tag since it's the default and adds noise
+		name := m.Name
+		name = strings.TrimSuffix(name, ":latest")
 		models[i] = OllamaModel{
-			Name:          m.Name,
+			Name:          name,
 			Size:          m.Size,
 			ParameterSize: m.Details.ParameterSize,
 			Family:        m.Details.Family,

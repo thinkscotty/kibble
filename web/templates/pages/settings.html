@@ -70,7 +70,11 @@
         <div class="form-row" style="margin-top: 0.5rem;">
             <div class="form-group">
                 <label for="ollama_model">Default Model</label>
-                <select id="ollama_model" name="ollama_model" class="form-input">
+                <select id="ollama_model" name="ollama_model" class="form-input"
+                        hx-get="/settings/ollama/models"
+                        hx-trigger="load"
+                        hx-swap="innerHTML"
+                        hx-include="[name='ollama_url']">
                     <option value="{{index .Settings "ollama_model"}}">{{index .Settings "ollama_model"}}</option>
                 </select>
             </div>
@@ -78,6 +82,7 @@
                 <button type="button" class="btn btn-secondary"
                         hx-get="/settings/ollama/models"
                         hx-target="#ollama_model"
+                        hx-swap="innerHTML"
                         hx-include="[name='ollama_url']">
                     Refresh Models
                 </button>
