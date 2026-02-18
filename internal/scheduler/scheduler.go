@@ -10,7 +10,9 @@ import (
 
 	"github.com/thinkscotty/kibble/internal/ai"
 	"github.com/thinkscotty/kibble/internal/database"
+	"github.com/thinkscotty/kibble/internal/feeds"
 	"github.com/thinkscotty/kibble/internal/models"
+	"github.com/thinkscotty/kibble/internal/reddit"
 	"github.com/thinkscotty/kibble/internal/scraper"
 	"github.com/thinkscotty/kibble/internal/similarity"
 )
@@ -340,6 +342,9 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	summarizeInstr, _ := s.db.GetSetting("news_summarizing_instructions")
 	toneInstr, _ := s.db.GetSetting("news_tone_instructions")
 
+	// Fetch recent story titles for deduplication context
+	existingTitles, _ := s.db.GetRecentStoryTitles(newsTopicID, 30)
+
 	stories, _, storyProvider, storyModel, err := s.ai.SummarizeContent(ctx, ai.SummarizeOpts{
 		TopicName:               topic.Name,
 		ScrapedContent:          scrapedContent,
@@ -349,6 +354,7 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 		MinWords:                topic.SummaryMinWords,
 		MaxWords:                topic.SummaryMaxWords,
 		AIProvider:              topic.AIProvider,
+		ExistingTitles:          existingTitles,
 	})
 	if err != nil {
 		s.handleNewsRefreshError(newsTopicID, fmt.Errorf("summarize content: %w", err))
@@ -394,12 +400,16 @@ func (s *Scheduler) discoverNewsSources(ctx context.Context, newsTopicID int64) 
 
 	sourcingInstr, _ := s.db.GetSetting("news_sourcing_instructions")
 
+	// Mine Reddit subreddits for frequently-shared external sources
+	communityDomains := s.mineRedditDomains(ctx, newsTopicID, topic.Name, topic.Description)
+
 	sources, _, _, _, err := s.ai.DiscoverSources(ctx, ai.DiscoverOpts{
 		TopicName:            topic.Name,
 		Description:          topic.Description,
 		SourcingInstructions: sourcingInstr,
 		AIProvider:           topic.AIProvider,
 		IsNiche:              topic.IsNiche,
+		CommunityDomains:     communityDomains,
 	})
 	if err != nil {
 		return fmt.Errorf("discover sources: %w", err)
@@ -408,17 +418,35 @@ func (s *Scheduler) discoverNewsSources(ctx context.Context, newsTopicID int64) 
 	// Clear existing AI sources and add new ones
 	s.db.ClearAINewsSourcesForTopic(newsTopicID)
 
+	var accepted int
 	for _, source := range sources {
 		if err := scraper.ValidateURL(source.URL); err != nil {
 			slog.Debug("Skipping invalid source URL", "url", source.URL, "error", err)
 			continue
 		}
-		if _, err := s.db.AddNewsSource(newsTopicID, source.URL, source.Name, false); err != nil {
-			slog.Error("Failed to add news source", "error", err)
+
+		// Validate source: test-scrape + RSS auto-discovery
+		result := s.scraper.ValidateSource(ctx, source.URL, source.Name)
+		if !result.OK {
+			slog.Info("Rejected news source (validation failed)",
+				"url", source.URL, "name", source.Name, "reason", result.Reason)
+			continue
 		}
+
+		finalURL := source.URL
+		if result.FeedURL != "" {
+			slog.Info("Discovered RSS feed for source", "original", source.URL, "rss", result.FeedURL)
+			finalURL = result.FeedURL
+		}
+
+		if _, err := s.db.AddNewsSource(newsTopicID, finalURL, source.Name, false); err != nil {
+			slog.Error("Failed to add news source", "error", err)
+			continue
+		}
+		accepted++
 	}
 
-	slog.Info("Discovered news sources", "topic", topic.Name, "count", len(sources))
+	slog.Info("Discovered news sources", "topic", topic.Name, "discovered", len(sources), "accepted", accepted)
 	return nil
 }
 
@@ -462,15 +490,101 @@ func (s *Scheduler) replaceRemovedSources(ctx context.Context, newsTopicID int64
 		if err := scraper.ValidateURL(source.URL); err != nil {
 			continue
 		}
-		if _, err := s.db.AddNewsSource(newsTopicID, source.URL, source.Name, false); err != nil {
+
+		// Validate source: test-scrape + RSS auto-discovery
+		result := s.scraper.ValidateSource(ctx, source.URL, source.Name)
+		if !result.OK {
+			slog.Info("Rejected replacement source (validation failed)",
+				"url", source.URL, "name", source.Name, "reason", result.Reason)
+			continue
+		}
+
+		finalURL := source.URL
+		if result.FeedURL != "" {
+			finalURL = result.FeedURL
+		}
+
+		if _, err := s.db.AddNewsSource(newsTopicID, finalURL, source.Name, false); err != nil {
 			slog.Error("Failed to add replacement source", "error", err)
 			continue
 		}
+		existingURLs[finalURL] = true
 		added++
-		slog.Info("Added replacement news source", "topic", topic.Name, "url", source.URL)
+		slog.Info("Added replacement news source", "topic", topic.Name, "url", finalURL)
 	}
 
 	slog.Info("Replaced removed sources", "topic", topic.Name, "removed", count, "replaced", added)
+}
+
+// mineRedditDomains collects frequently-shared external domains from relevant subreddits.
+// It checks existing topic sources and curated feeds for Reddit URLs, then mines their
+// top link posts to find domains the community values.
+func (s *Scheduler) mineRedditDomains(ctx context.Context, newsTopicID int64, topicName, description string) []string {
+	// Collect Reddit URLs from existing sources and curated feeds
+	var redditURLs []string
+
+	existingSources, _ := s.db.GetSourcesForNewsTopic(newsTopicID)
+	for _, src := range existingSources {
+		if reddit.IsRedditURL(src.URL) {
+			redditURLs = append(redditURLs, src.URL)
+		}
+	}
+
+	for _, feed := range feeds.FindRelevant(topicName, description) {
+		if reddit.IsRedditURL(feed.URL) {
+			// Avoid duplicates
+			found := false
+			for _, u := range redditURLs {
+				if u == feed.URL {
+					found = true
+					break
+				}
+			}
+			if !found {
+				redditURLs = append(redditURLs, feed.URL)
+			}
+		}
+	}
+
+	if len(redditURLs) == 0 {
+		return nil
+	}
+
+	// Mine top link posts from up to 3 subreddits
+	redditClient := reddit.New()
+	var allLinkPosts []reddit.LinkPost
+	limit := 3
+	if len(redditURLs) < limit {
+		limit = len(redditURLs)
+	}
+	for _, subURL := range redditURLs[:limit] {
+		links, err := redditClient.FetchTopLinks(ctx, subURL, 25)
+		if err != nil {
+			slog.Debug("Failed to fetch Reddit links for mining", "url", subURL, "error", err)
+			continue
+		}
+		allLinkPosts = append(allLinkPosts, links...)
+	}
+
+	if len(allLinkPosts) == 0 {
+		return nil
+	}
+
+	ranked := reddit.RankDomains(allLinkPosts)
+
+	// Take top 8 domains
+	maxDomains := 8
+	if len(ranked) < maxDomains {
+		maxDomains = len(ranked)
+	}
+
+	var domains []string
+	for _, r := range ranked[:maxDomains] {
+		domains = append(domains, r.Domain)
+	}
+
+	slog.Info("Mined Reddit link domains", "topic", topicName, "domains", domains)
+	return domains
 }
 
 func (s *Scheduler) handleNewsRefreshError(newsTopicID int64, err error) {

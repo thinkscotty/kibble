@@ -104,11 +104,11 @@ func (c *Client) DiscoverSources(ctx context.Context, opts DiscoverOpts) ([]Disc
 			slog.Warn("Wikipedia research failed for source discovery, falling back", "topic", opts.TopicName, "error", err)
 		}
 		if researchCtx != "" {
-			prompt = BuildDiscoverPromptWithContext(opts.TopicName, opts.Description, opts.SourcingInstructions, suggested, researchCtx)
+			prompt = BuildDiscoverPromptWithContext(opts.TopicName, opts.Description, opts.SourcingInstructions, suggested, opts.CommunityDomains, researchCtx)
 		}
 	}
 	if prompt == "" {
-		prompt = BuildDiscoverPrompt(opts.TopicName, opts.Description, opts.SourcingInstructions, suggested)
+		prompt = BuildDiscoverPrompt(opts.TopicName, opts.Description, opts.SourcingInstructions, suggested, opts.CommunityDomains)
 	}
 
 	resp, err := provider.Chat(ctx, ChatRequest{
@@ -147,6 +147,7 @@ func (c *Client) SummarizeContent(ctx context.Context, opts SummarizeOpts) ([]Su
 		opts.TopicName, opts.ScrapedContent,
 		opts.SummarizingInstructions, opts.ToneInstructions,
 		opts.MaxStories, opts.MinWords, opts.MaxWords,
+		opts.ExistingTitles,
 	)
 
 	resp, err := provider.Chat(ctx, ChatRequest{

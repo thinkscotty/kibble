@@ -50,16 +50,18 @@ type DiscoverOpts struct {
 	SourcingInstructions string
 	AIProvider           string
 	IsNiche              bool
+	CommunityDomains     []string // Domains frequently shared in related subreddits
 }
 
 // SummarizeOpts holds parameters for content summarization.
 type SummarizeOpts struct {
-	TopicName                string
-	ScrapedContent           []ScrapedContent
-	SummarizingInstructions  string
-	ToneInstructions         string
-	MaxStories               int
-	MinWords                 int
-	MaxWords                 int
-	AIProvider               string
+	TopicName               string
+	ScrapedContent          []ScrapedContent
+	SummarizingInstructions string
+	ToneInstructions        string
+	MaxStories              int
+	MinWords                int
+	MaxWords                int
+	AIProvider              string
+	ExistingTitles          []string // Recent story titles for dedup
 }

@@ -83,7 +83,7 @@ func stripNumbering(s string) string {
 }
 
 // BuildDiscoverPrompt constructs the prompt for discovering news sources.
-func BuildDiscoverPrompt(topicName, description, sourcingInstructions string, suggestedFeeds []feeds.Feed) string {
+func BuildDiscoverPrompt(topicName, description, sourcingInstructions string, suggestedFeeds []feeds.Feed, communityDomains []string) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf(`You are a helpful assistant that discovers reliable web sources for news topics.
@@ -106,15 +106,31 @@ Description: %s
 		sb.WriteString("\nYou may include additional sources beyond this list if needed to cover the topic well.\n\n")
 	}
 
-	sb.WriteString(`Find 4-8 reliable sources that provide ongoing news and updates related to this topic. Sources can include:
-- News websites and RSS feeds
-- Reddit subreddits (format as https://reddit.com/r/subredditname)
-- Technical blogs or official sources
+	if len(communityDomains) > 0 {
+		sb.WriteString("COMMUNITY-RECOMMENDED SOURCES:\nThe following domains are frequently shared and upvoted in relevant Reddit communities. Consider including sources from these domains:\n")
+		for _, domain := range communityDomains {
+			sb.WriteString(fmt.Sprintf("- %s\n", domain))
+		}
+		sb.WriteString("\n")
+	}
 
-For Reddit, include 1-2 relevant subreddits if they exist for this topic. Choose active subreddits with engaged communities.
+	sb.WriteString(`Find 6-10 reliable sources that provide ongoing news and updates related to this topic.
+
+SOURCE DIVERSITY REQUIREMENTS:
+- Include a MIX of source types: at least 1-2 niche/independent/specialized sources alongside major outlets
+- Prefer sources with RSS feeds or well-structured HTML content
+- Avoid paywalled or heavily JavaScript-dependent sites
+- Look for: independent blogs, industry newsletters, specialized publications, official project/org feeds
+
+SOURCE TYPES (include a variety):
+- RSS feeds (preferred — most reliable for scraping)
+- News websites with accessible article content
+- Reddit subreddits (format as https://reddit.com/r/subredditname) — include 1-2 relevant active subreddits
+- Technical blogs, official project blogs, or organizational feeds
+- Niche community sites or specialized publications
 
 For each source, provide:
-1. The URL (must be a real, working URL)
+1. The URL (must be a real, working URL — prefer RSS feed URLs ending in /feed, /rss, .xml when you know them)
 2. A short name for the source
 3. A brief description of what content it provides
 
@@ -130,7 +146,7 @@ Format:
 }
 
 // BuildDiscoverPromptWithContext constructs a source discovery prompt augmented with research context (RAG).
-func BuildDiscoverPromptWithContext(topicName, description, sourcingInstructions string, suggestedFeeds []feeds.Feed, context string) string {
+func BuildDiscoverPromptWithContext(topicName, description, sourcingInstructions string, suggestedFeeds []feeds.Feed, communityDomains []string, context string) string {
 	var sb strings.Builder
 
 	sb.WriteString("=== BACKGROUND RESEARCH ===\n")
@@ -139,13 +155,13 @@ func BuildDiscoverPromptWithContext(topicName, description, sourcingInstructions
 	sb.WriteString(context)
 	sb.WriteString("\n\n=== END BACKGROUND RESEARCH ===\n\n")
 
-	sb.WriteString(BuildDiscoverPrompt(topicName, description, sourcingInstructions, suggestedFeeds))
+	sb.WriteString(BuildDiscoverPrompt(topicName, description, sourcingInstructions, suggestedFeeds, communityDomains))
 
 	return sb.String()
 }
 
 // BuildSummarizePrompt constructs the prompt for summarizing scraped content.
-func BuildSummarizePrompt(topicName string, scrapedContent []ScrapedContent, summarizingInstructions, toneInstructions string, maxStories, minWords, maxWords int) string {
+func BuildSummarizePrompt(topicName string, scrapedContent []ScrapedContent, summarizingInstructions, toneInstructions string, maxStories, minWords, maxWords int, existingTitles []string) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf(`You are a news summarization assistant. Analyze the following scraped content and create clear, informative news summaries.
@@ -188,6 +204,27 @@ IMPORTANT FILTERING RULES:
 - For Reddit posts, focus on substantive discussions and news, not casual comments or memes
 - Prioritize recent, newsworthy content over general discussion
 
+SOURCE DIVERSITY:
+- Distribute stories across different sources. Avoid selecting more than 2 stories from the same source.
+- If multiple sources report the same event, pick the best-written version from one source only.
+
+EDITORIAL QUALITY:
+- Choose stories a curious, informed reader would find surprising, illuminating, or consequential
+- Prefer stories with genuine news value over routine announcements or press releases
+- Skip listicles, opinion pieces with no news hook, and repackaged wire stories
+
+`, maxStories, topicName))
+
+	// Add dedup context if existing titles are provided
+	if len(existingTitles) > 0 {
+		sb.WriteString("\nDEDUPLICATION:\nThe following stories have already been published recently. Do NOT repeat these topics or events:\n")
+		for _, title := range existingTitles {
+			sb.WriteString(fmt.Sprintf("- %s\n", title))
+		}
+		sb.WriteString("Select stories covering DIFFERENT events or angles than those listed above.\n")
+	}
+
+	sb.WriteString(`
 For each story:
 1. Create a compelling headline (title)
 2. Write a summary focusing on key facts and why this story matters
@@ -199,7 +236,7 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text, markdown, or 
 Format:
 [
   {"title": "Headline Here", "summary": "Summary text here...", "source_url": "https://source.com/article", "source_title": "Source Name"}
-]`, maxStories, topicName))
+]`)
 
 	return sb.String()
 }

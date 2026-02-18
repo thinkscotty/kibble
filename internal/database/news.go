@@ -259,6 +259,28 @@ func scanNewsSources(rows *sql.Rows) ([]models.NewsSource, error) {
 
 // --- Stories ---
 
+// GetRecentStoryTitles returns the titles of the N most recent stories for a topic.
+// Used to provide deduplication context to the AI summarization prompt.
+func (db *DB) GetRecentStoryTitles(newsTopicID int64, limit int) ([]string, error) {
+	rows, err := db.conn.Query(`
+		SELECT title FROM stories WHERE news_topic_id = ?
+		ORDER BY created_at DESC LIMIT ?`, newsTopicID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var titles []string
+	for rows.Next() {
+		var title string
+		if err := rows.Scan(&title); err != nil {
+			return nil, err
+		}
+		titles = append(titles, title)
+	}
+	return titles, rows.Err()
+}
+
 func (db *DB) ListStoriesByNewsTopic(newsTopicID int64, limit int) ([]models.Story, error) {
 	rows, err := db.conn.Query(`
 		SELECT id, news_topic_id, title, summary, source_url, source_title, ai_provider, ai_model, published_at, created_at

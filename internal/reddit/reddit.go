@@ -171,6 +171,8 @@ type redditPost struct {
 	Title      string  `json:"title"`
 	Selftext   string  `json:"selftext"`
 	IsSelf     bool    `json:"is_self"`
+	URL        string  `json:"url"`
+	Domain     string  `json:"domain"`
 	Permalink  string  `json:"permalink"`
 	Subreddit  string  `json:"subreddit"`
 	Author     string  `json:"author"`
