@@ -18,10 +18,16 @@ func (s *Server) handleStatsPage(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed to get recent usage", "error", err)
 	}
 
+	refreshLogs, err := s.db.RecentRefreshLogs(50)
+	if err != nil {
+		slog.Error("Failed to get refresh logs", "error", err)
+	}
+
 	data := map[string]any{
 		"Page":        "stats",
 		"Stats":       stats,
 		"RecentUsage": recentUsage,
+		"RefreshLogs": refreshLogs,
 	}
 	s.render(w, "stats", data)
 }

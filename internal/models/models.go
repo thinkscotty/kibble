@@ -134,6 +134,22 @@ type NewsRefreshStatus struct {
 	ErrorMessage string    `json:"error_message,omitempty"`
 }
 
+// RefreshLog records the outcome of a single topic refresh (facts or news).
+type RefreshLog struct {
+	ID           int64     `json:"id"`
+	TopicType    string    `json:"topic_type"`  // "facts" or "news"
+	TopicID      int64     `json:"topic_id"`
+	TopicName    string    `json:"topic_name"`
+	Status       string    `json:"status"`      // "success" or "error"
+	ErrorType    string    `json:"error_type"`   // classified error category
+	ErrorMessage string    `json:"error_message"`
+	DurationMs   int64     `json:"duration_ms"`
+	AIProvider   string    `json:"ai_provider"`
+	AIModel      string    `json:"ai_model"`
+	ItemCount    int       `json:"item_count"` // facts generated or stories created
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 type Stats struct {
 	TotalTopics       int   `json:"total_topics"`
 	ActiveTopics      int   `json:"active_topics"`

@@ -180,6 +180,12 @@ func (s *Server) loadTemplates() error {
 			}
 			return s
 		},
+		"divFloat": func(a int64, b int) float64 {
+			if b == 0 {
+				return 0
+			}
+			return float64(a) / float64(b)
+		},
 		"formatBytes": func(b int64) string {
 			const unit = 1024
 			if b < unit {

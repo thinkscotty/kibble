@@ -124,4 +124,61 @@
     <p class="text-muted">No API activity yet.</p>
     {{end}}
 </div>
+
+<!-- Refresh Activity Log -->
+<div class="card">
+    <h3 class="card-title">Refresh Activity Log</h3>
+    {{if .RefreshLogs}}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Error Type</th>
+                    <th>Duration</th>
+                    <th>Provider</th>
+                    <th>Items</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .RefreshLogs}}
+                <tr>
+                    <td>{{.TopicName}}</td>
+                    <td>
+                        {{if eq .TopicType "facts"}}
+                            <span class="badge badge-topic">Facts</span>
+                        {{else}}
+                            <span class="badge badge-ai-source">News</span>
+                        {{end}}
+                    </td>
+                    <td>
+                        {{if eq .Status "success"}}
+                            <span class="badge badge-active">OK</span>
+                        {{else}}
+                            <span class="badge badge-error" title="{{.ErrorMessage}}">Error</span>
+                        {{end}}
+                    </td>
+                    <td>
+                        {{if .ErrorType}}
+                            <span class="text-sm">{{.ErrorType}}</span>
+                        {{else}}
+                            <span class="text-muted text-sm">—</span>
+                        {{end}}
+                    </td>
+                    <td class="text-sm">{{printf "%.1fs" (divFloat .DurationMs 1000)}}</td>
+                    <td class="text-sm">{{if .AIProvider}}{{.AIProvider}}{{else}}<span class="text-muted">—</span>{{end}}</td>
+                    <td>{{.ItemCount}}</td>
+                    <td class="text-muted text-sm">{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <p class="text-muted">No refresh activity yet.</p>
+    {{end}}
+</div>
 {{end}}

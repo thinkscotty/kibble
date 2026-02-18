@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 
@@ -110,6 +111,7 @@ func (s *Scheduler) checkAndRefresh(ctx context.Context) {
 
 func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 	slog.Info("Refreshing topic", "topic", topic.Name, "id", topic.ID)
+	start := time.Now()
 
 	customInstr, _ := s.db.GetSetting("ai_custom_instructions")
 	toneInstr, _ := s.db.GetSetting("ai_tone_instructions")
@@ -138,6 +140,12 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 		slog.Error("Failed to generate facts", "topic", topic.Name, "error", err)
 		logEntry.ErrorMessage = err.Error()
 		s.db.LogAPIUsage(logEntry)
+		s.db.LogRefresh(models.RefreshLog{
+			TopicType: "facts", TopicID: topic.ID, TopicName: topic.Name,
+			Status: "error", ErrorType: classifyError(err), ErrorMessage: err.Error(),
+			DurationMs: time.Since(start).Milliseconds(),
+			AIProvider: providerName, AIModel: modelName,
+		})
 		return
 	}
 
@@ -178,6 +186,12 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 	logEntry.FactsDiscarded = discarded
 	s.db.LogAPIUsage(logEntry)
 	s.db.UpdateTopicRefreshTime(topic.ID)
+
+	s.db.LogRefresh(models.RefreshLog{
+		TopicType: "facts", TopicID: topic.ID, TopicName: topic.Name,
+		Status: "success", DurationMs: time.Since(start).Milliseconds(),
+		AIProvider: providerName, AIModel: modelName, ItemCount: generated,
+	})
 
 	slog.Info("Topic refreshed", "topic", topic.Name,
 		"generated", generated, "discarded", discarded)
@@ -260,6 +274,7 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	}
 
 	slog.Info("Refreshing news topic", "topic", topic.Name, "id", topic.ID)
+	start := time.Now()
 
 	// Mark in-progress
 	s.db.UpdateNewsRefreshStatus(&models.NewsRefreshStatus{
@@ -271,6 +286,7 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	sources, err := s.db.GetActiveSourcesForNewsTopic(newsTopicID)
 	if err != nil {
 		s.handleNewsRefreshError(newsTopicID, fmt.Errorf("get sources: %w", err))
+		s.logNewsRefreshError(topic, start, fmt.Errorf("get sources: %w", err))
 		return
 	}
 
@@ -278,11 +294,14 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	if len(sources) == 0 {
 		if err := s.discoverNewsSources(ctx, newsTopicID); err != nil {
 			s.handleNewsRefreshError(newsTopicID, fmt.Errorf("discover sources: %w", err))
+			s.logNewsRefreshError(topic, start, fmt.Errorf("discover sources: %w", err))
 			return
 		}
 		sources, _ = s.db.GetActiveSourcesForNewsTopic(newsTopicID)
 		if len(sources) == 0 {
-			s.handleNewsRefreshError(newsTopicID, fmt.Errorf("no sources available for topic"))
+			noSourcesErr := fmt.Errorf("no sources available for topic")
+			s.handleNewsRefreshError(newsTopicID, noSourcesErr)
+			s.logNewsRefreshError(topic, start, noSourcesErr)
 			return
 		}
 	}
@@ -334,7 +353,9 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	}
 
 	if len(scrapedContent) == 0 {
-		s.handleNewsRefreshError(newsTopicID, fmt.Errorf("failed to scrape any content from active sources"))
+		noContentErr := fmt.Errorf("failed to scrape any content from active sources")
+		s.handleNewsRefreshError(newsTopicID, noContentErr)
+		s.logNewsRefreshError(topic, start, noContentErr)
 		return
 	}
 
@@ -358,6 +379,7 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	})
 	if err != nil {
 		s.handleNewsRefreshError(newsTopicID, fmt.Errorf("summarize content: %w", err))
+		s.logNewsRefreshError(topic, start, fmt.Errorf("summarize content: %w", err))
 		return
 	}
 
@@ -388,6 +410,12 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 		Status:      "completed",
 	})
 	s.db.UpdateNewsTopicRefreshTime(newsTopicID)
+
+	s.db.LogRefresh(models.RefreshLog{
+		TopicType: "news", TopicID: topic.ID, TopicName: topic.Name,
+		Status: "success", DurationMs: time.Since(start).Milliseconds(),
+		AIProvider: storyProvider, AIModel: storyModel, ItemCount: len(stories),
+	})
 
 	slog.Info("News topic refreshed", "topic", topic.Name, "stories", len(stories))
 }
@@ -595,6 +623,51 @@ func (s *Scheduler) handleNewsRefreshError(newsTopicID int64, err error) {
 		Status:       "failed",
 		ErrorMessage: err.Error(),
 	})
+}
+
+// logNewsRefreshError logs a news refresh error to the refresh_log table.
+func (s *Scheduler) logNewsRefreshError(topic models.NewsTopic, start time.Time, err error) {
+	s.db.LogRefresh(models.RefreshLog{
+		TopicType: "news", TopicID: topic.ID, TopicName: topic.Name,
+		Status: "error", ErrorType: classifyError(err), ErrorMessage: err.Error(),
+		DurationMs: time.Since(start).Milliseconds(),
+		AIProvider: topic.AIProvider,
+	})
+}
+
+// classifyError categorizes an error into a descriptive type for the refresh log.
+func classifyError(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+
+	switch {
+	case strings.Contains(msg, "context deadline exceeded") || strings.Contains(msg, "context canceled"):
+		return "timeout"
+	case strings.Contains(msg, "no sources available"):
+		return "no_sources"
+	case strings.Contains(msg, "failed to scrape any content") || strings.Contains(msg, "insufficient content"):
+		return "no_content"
+	case strings.Contains(msg, "discover sources"):
+		return "discovery_error"
+	case strings.Contains(msg, "scrape error") || strings.Contains(msg, "failed to visit"):
+		return "scrape_error"
+	case strings.Contains(msg, "failed to parse") || strings.Contains(msg, "JSON"):
+		return "parse_error"
+	case strings.Contains(msg, "summarize content"):
+		return "summarize_error"
+	case strings.Contains(msg, "status 429") || strings.Contains(msg, "rate limit"):
+		return "rate_limited"
+	case strings.Contains(msg, "status 401") || strings.Contains(msg, "status 403") || strings.Contains(msg, "API key"):
+		return "auth_error"
+	case strings.Contains(msg, "connection refused") || strings.Contains(msg, "no such host") || strings.Contains(msg, "dial tcp"):
+		return "connection_error"
+	case strings.Contains(msg, "panic"):
+		return "panic"
+	default:
+		return "ai_error"
+	}
 }
 
 // RefreshNewsNow triggers an immediate news topic refresh.

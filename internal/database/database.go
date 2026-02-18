@@ -178,6 +178,21 @@ func (db *DB) migrate() error {
 			status         TEXT    NOT NULL DEFAULT 'pending',
 			error_message  TEXT    NOT NULL DEFAULT ''
 		)`,
+		`CREATE TABLE IF NOT EXISTS refresh_log (
+			id            INTEGER PRIMARY KEY AUTOINCREMENT,
+			topic_type    TEXT    NOT NULL,
+			topic_id      INTEGER NOT NULL,
+			topic_name    TEXT    NOT NULL,
+			status        TEXT    NOT NULL,
+			error_type    TEXT    NOT NULL DEFAULT '',
+			error_message TEXT    NOT NULL DEFAULT '',
+			duration_ms   INTEGER NOT NULL DEFAULT 0,
+			ai_provider   TEXT    NOT NULL DEFAULT '',
+			ai_model      TEXT    NOT NULL DEFAULT '',
+			item_count    INTEGER NOT NULL DEFAULT 0,
+			created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_refresh_log_created ON refresh_log(created_at DESC)`,
 	}
 
 	for _, stmt := range statements {

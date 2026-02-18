@@ -1,6 +1,8 @@
 package database
 
 import (
+	"fmt"
+
 	"github.com/thinkscotty/kibble/internal/models"
 )
 
@@ -137,4 +139,50 @@ func (db *DB) RecentAPIUsage(limit int) ([]models.APIUsageLog, error) {
 		logs = append(logs, log)
 	}
 	return logs, rows.Err()
+}
+
+// LogRefresh records a refresh attempt (facts or news) in the refresh_log table.
+func (db *DB) LogRefresh(entry models.RefreshLog) error {
+	_, err := db.conn.Exec(`
+		INSERT INTO refresh_log (topic_type, topic_id, topic_name, status, error_type, error_message, duration_ms, ai_provider, ai_model, item_count)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		entry.TopicType, entry.TopicID, entry.TopicName, entry.Status,
+		entry.ErrorType, entry.ErrorMessage, entry.DurationMs,
+		entry.AIProvider, entry.AIModel, entry.ItemCount)
+	return err
+}
+
+// RecentRefreshLogs returns the N most recent refresh log entries.
+func (db *DB) RecentRefreshLogs(limit int) ([]models.RefreshLog, error) {
+	rows, err := db.conn.Query(`
+		SELECT id, topic_type, topic_id, topic_name, status, error_type, error_message,
+		       duration_ms, ai_provider, ai_model, item_count, created_at
+		FROM refresh_log
+		ORDER BY created_at DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var logs []models.RefreshLog
+	for rows.Next() {
+		var entry models.RefreshLog
+		var createdAt string
+		if err := rows.Scan(&entry.ID, &entry.TopicType, &entry.TopicID, &entry.TopicName,
+			&entry.Status, &entry.ErrorType, &entry.ErrorMessage,
+			&entry.DurationMs, &entry.AIProvider, &entry.AIModel,
+			&entry.ItemCount, &createdAt); err != nil {
+			return nil, err
+		}
+		entry.CreatedAt, _ = parseTime(createdAt)
+		logs = append(logs, entry)
+	}
+	return logs, rows.Err()
+}
+
+// CleanOldRefreshLogs removes refresh log entries older than the given number of days.
+func (db *DB) CleanOldRefreshLogs(days int) error {
+	_, err := db.conn.Exec(`DELETE FROM refresh_log WHERE created_at < datetime('now', ?)`,
+		fmt.Sprintf("-%d days", days))
+	return err
 }
