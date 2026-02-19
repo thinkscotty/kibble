@@ -348,8 +348,8 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 				errMsg = errMsg[:500]
 			}
 
-			if newFailureCount >= 3 {
-				// Auto-remove source after accumulating 3 failures across refreshes
+			if newFailureCount >= 5 {
+				// Auto-remove source after accumulating 5 failures across refreshes
 				s.db.DeleteNewsSource(result.Source.ID)
 				removedSourceCount++
 				slog.Warn("Auto-removed failing news source",
@@ -373,8 +373,12 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 		s.replaceRemovedSources(ctx, newsTopicID, removedSourceCount)
 	}
 
+	slog.Info("Scrape results", "topic", topic.Name, "total_sources", len(sources),
+		"scraped_ok", len(scrapedContent), "failed", len(sources)-len(scrapedContent),
+		"auto_removed", removedSourceCount)
+
 	if len(scrapedContent) == 0 {
-		noContentErr := fmt.Errorf("failed to scrape any content from active sources")
+		noContentErr := fmt.Errorf("failed to scrape any content from %d active sources", len(sources))
 		s.handleNewsRefreshError(newsTopicID, noContentErr)
 		s.logNewsRefreshError(topic, start, noContentErr)
 		return
