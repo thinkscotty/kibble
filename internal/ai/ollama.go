@@ -85,13 +85,20 @@ func (o *OllamaProvider) Name() string { return "ollama" }
 
 func (o *OllamaProvider) Chat(ctx context.Context, req ChatRequest) (*ChatResponse, error) {
 	baseURL, err := o.settings.GetSetting("ollama_url")
-	if err != nil || baseURL == "" {
+	if err != nil || strings.TrimSpace(baseURL) == "" {
 		baseURL = "http://localhost:11434"
 	}
+	baseURL = strings.TrimSpace(baseURL)
 
 	model, err := o.settings.GetSetting("ollama_model")
-	if err != nil || model == "" {
+	if err != nil || strings.TrimSpace(model) == "" {
 		model = "mistral-nemo"
+	}
+	model = strings.TrimSpace(model)
+
+	// Check if context is already cancelled before starting the request
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("ollama request skipped (context already cancelled): %w", ctx.Err())
 	}
 
 	// Convert messages
@@ -117,16 +124,25 @@ func (o *OllamaProvider) Chat(ctx context.Context, req ChatRequest) (*ChatRespon
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
+	promptChars := 0
+	for _, m := range msgs {
+		promptChars += len(m.Content)
+	}
+
 	url := strings.TrimRight(baseURL, "/") + "/v1/chat/completions"
+	slog.Info("Ollama request starting", "url", url, "model", model, "prompt_chars", promptChars, "json_mode", req.JSONMode)
+
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
+	start := time.Now()
 	resp, err := o.httpClient.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("ollama request failed: %w", err)
+		slog.Error("Ollama request failed", "url", url, "model", model, "elapsed", time.Since(start), "error", err)
+		return nil, fmt.Errorf("ollama request failed (model=%s, url=%s, elapsed=%s): %w", model, url, time.Since(start), err)
 	}
 	defer resp.Body.Close()
 
@@ -158,6 +174,8 @@ func (o *OllamaProvider) Chat(ctx context.Context, req ChatRequest) (*ChatRespon
 	if len(chatResp.Choices) > 0 {
 		content = chatResp.Choices[0].Message.Content
 	}
+
+	slog.Info("Ollama request completed", "model", model, "elapsed", time.Since(start), "tokens", tokensUsed, "response_chars", len(content))
 
 	return &ChatResponse{
 		Content:    content,
