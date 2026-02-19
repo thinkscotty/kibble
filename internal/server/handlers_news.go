@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -90,7 +91,7 @@ func (s *Server) handleNewsTopicCreate(w http.ResponseWriter, r *http.Request) {
 
 	// Trigger background source discovery
 	go func() {
-		if err := s.sched.DiscoverSourcesNow(r.Context(), nt.ID); err != nil {
+		if err := s.sched.DiscoverSourcesNow(context.Background(), nt.ID); err != nil {
 			slog.Error("Background source discovery failed", "topic_id", nt.ID, "error", err)
 		}
 	}()
@@ -219,7 +220,7 @@ func (s *Server) handleNewsTopicRefresh(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	go s.sched.RefreshNewsNow(r.Context(), id)
+	go s.sched.RefreshNewsNow(context.Background(), id)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, `<span class="text-success text-sm">Refresh started...</span>`)
@@ -232,7 +233,7 @@ func (s *Server) handleNewsTopicDiscover(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := s.sched.DiscoverSourcesNow(r.Context(), id); err != nil {
+	if err := s.sched.DiscoverSourcesNow(context.Background(), id); err != nil {
 		slog.Error("Source discovery failed", "error", err)
 		http.Error(w, "Source discovery failed: "+err.Error(), 500)
 		return

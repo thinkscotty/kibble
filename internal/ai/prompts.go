@@ -321,3 +321,32 @@ func looksLikeJSON(s string) bool {
 	return (strings.HasPrefix(s, "[") && strings.HasSuffix(s, "]")) ||
 		(strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}"))
 }
+
+// IsCompleteSentence checks whether text appears to be a complete, well-formed sentence.
+// It returns false if the text has fewer than minWords words or does not end with
+// terminal punctuation (., !, ?), optionally followed by closing quotes or brackets.
+const DefaultMinWords = 10
+
+func IsCompleteSentence(text string, minWords int) bool {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return false
+	}
+
+	if minWords < DefaultMinWords {
+		minWords = DefaultMinWords
+	}
+
+	if len(strings.Fields(text)) < minWords {
+		return false
+	}
+
+	// Strip trailing closing punctuation that may follow a sentence terminator
+	stripped := strings.TrimRight(text, `"'")]}» `)
+	if stripped == "" {
+		return false
+	}
+
+	last := stripped[len(stripped)-1]
+	return last == '.' || last == '!' || last == '?'
+}

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -201,7 +202,7 @@ func (s *Server) handleTopicRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.sched.RefreshNow(r.Context(), id); err != nil {
+	if err := s.sched.RefreshNow(context.Background(), id); err != nil {
 		slog.Error("Failed to refresh topic", "error", err)
 		http.Error(w, "Failed to refresh: "+err.Error(), 500)
 		return

@@ -26,6 +26,19 @@ type Scheduler struct {
 	locks   sync.Map // per-topic locks: topicKey -> *sync.Mutex
 }
 
+// aiTimeout returns an appropriate context timeout based on the effective AI provider.
+// Ollama (local inference) gets longer timeouts since it's significantly slower than cloud APIs.
+func (s *Scheduler) aiTimeout(topicAIProvider string, cloudTimeout, ollamaTimeout time.Duration) time.Duration {
+	provider := topicAIProvider
+	if provider == "" {
+		provider, _ = s.db.GetSetting("ai_provider")
+	}
+	if provider == "ollama" {
+		return ollamaTimeout
+	}
+	return cloudTimeout
+}
+
 // topicKey returns a unique key for per-topic locking.
 func topicKey(kind string, id int64) string {
 	return fmt.Sprintf("%s:%d", kind, id)
@@ -116,7 +129,7 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 	customInstr, _ := s.db.GetSetting("ai_custom_instructions")
 	toneInstr, _ := s.db.GetSetting("ai_tone_instructions")
 
-	aiCtx, aiCancel := context.WithTimeout(ctx, 5*time.Minute)
+	aiCtx, aiCancel := context.WithTimeout(ctx, s.aiTimeout(topic.AIProvider, 5*time.Minute, 15*time.Minute))
 	defer aiCancel()
 
 	facts, tokensUsed, providerName, modelName, err := s.ai.GenerateFacts(aiCtx, ai.FactsOpts{
@@ -158,6 +171,11 @@ func (s *Scheduler) refreshTopic(ctx context.Context, topic models.Topic) {
 	generated := 0
 	discarded := 0
 	for _, content := range facts {
+		if !ai.IsCompleteSentence(content, topic.SummaryMinWords) {
+			slog.Debug("Discarded incomplete fact", "topic", topic.Name, "content", content)
+			discarded++
+			continue
+		}
 		if s.sim.IsTooSimilar(content, existingTrigrams) {
 			discarded++
 			continue
@@ -369,7 +387,7 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	// Fetch recent story titles for deduplication context
 	existingTitles, _ := s.db.GetRecentStoryTitles(newsTopicID, 30)
 
-	sumCtx, sumCancel := context.WithTimeout(ctx, 8*time.Minute)
+	sumCtx, sumCancel := context.WithTimeout(ctx, s.aiTimeout(topic.AIProvider, 8*time.Minute, 20*time.Minute))
 	defer sumCancel()
 
 	stories, _, storyProvider, storyModel, err := s.ai.SummarizeContent(sumCtx, ai.SummarizeOpts{
@@ -389,8 +407,13 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 		return
 	}
 
-	// Store stories
+	// Store stories, discarding any with incomplete summaries
+	storedCount := 0
 	for _, story := range stories {
+		if !ai.IsCompleteSentence(story.Summary, topic.SummaryMinWords) {
+			slog.Debug("Discarded incomplete story", "topic", topic.Name, "title", story.Title, "summary", story.Summary)
+			continue
+		}
 		dbStory := &models.Story{
 			NewsTopicID: newsTopicID,
 			Title:       story.Title,
@@ -402,7 +425,9 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 		}
 		if err := s.db.CreateStory(dbStory); err != nil {
 			slog.Error("Failed to create story", "error", err)
+			continue
 		}
+		storedCount++
 	}
 
 	// Clean up old stories (keep 3x display count)
@@ -420,10 +445,11 @@ func (s *Scheduler) refreshNewsTopic(ctx context.Context, newsTopicID int64) {
 	s.db.LogRefresh(models.RefreshLog{
 		TopicType: "news", TopicID: topic.ID, TopicName: topic.Name,
 		Status: "success", DurationMs: time.Since(start).Milliseconds(),
-		AIProvider: storyProvider, AIModel: storyModel, ItemCount: len(stories),
+		AIProvider: storyProvider, AIModel: storyModel, ItemCount: storedCount,
 	})
 
-	slog.Info("News topic refreshed", "topic", topic.Name, "stories", len(stories))
+	slog.Info("News topic refreshed", "topic", topic.Name,
+		"stories", storedCount, "discarded_incomplete", len(stories)-storedCount)
 }
 
 func (s *Scheduler) discoverNewsSources(ctx context.Context, newsTopicID int64) error {
@@ -437,7 +463,7 @@ func (s *Scheduler) discoverNewsSources(ctx context.Context, newsTopicID int64) 
 	// Mine Reddit subreddits for frequently-shared external sources
 	communityDomains := s.mineRedditDomains(ctx, newsTopicID, topic.Name, topic.Description)
 
-	discoverCtx, discoverCancel := context.WithTimeout(ctx, 5*time.Minute)
+	discoverCtx, discoverCancel := context.WithTimeout(ctx, s.aiTimeout(topic.AIProvider, 5*time.Minute, 15*time.Minute))
 	defer discoverCancel()
 
 	sources, _, _, _, err := s.ai.DiscoverSources(discoverCtx, ai.DiscoverOpts{
@@ -504,7 +530,7 @@ func (s *Scheduler) replaceRemovedSources(ctx context.Context, newsTopicID int64
 		existingURLs[src.URL] = true
 	}
 
-	replaceCtx, replaceCancel := context.WithTimeout(ctx, 5*time.Minute)
+	replaceCtx, replaceCancel := context.WithTimeout(ctx, s.aiTimeout(topic.AIProvider, 5*time.Minute, 15*time.Minute))
 	defer replaceCancel()
 
 	discovered, _, _, _, err := s.ai.DiscoverSources(replaceCtx, ai.DiscoverOpts{
