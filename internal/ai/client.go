@@ -141,8 +141,19 @@ func (c *Client) DiscoverSources(ctx context.Context, opts DiscoverOpts) ([]Disc
 		if err2 := json.Unmarshal([]byte(responseText), &single); err2 == nil && single.URL != "" {
 			sources = []DiscoveredSource{single}
 		} else {
-			return nil, resp.TokensUsed, resp.Provider, resp.Model,
-				fmt.Errorf("failed to parse sources JSON from %s: %w (response: %.500s)", provider.Name(), err, responseText)
+			// AI sometimes wraps the array in an object like {"sources": [...]}
+			var wrapper map[string]json.RawMessage
+			if err3 := json.Unmarshal([]byte(responseText), &wrapper); err3 == nil {
+				for _, v := range wrapper {
+					if err4 := json.Unmarshal(v, &sources); err4 == nil && len(sources) > 0 {
+						break
+					}
+				}
+			}
+			if len(sources) == 0 {
+				return nil, resp.TokensUsed, resp.Provider, resp.Model,
+					fmt.Errorf("failed to parse sources JSON from %s: %w (response: %.500s)", provider.Name(), err, responseText)
+			}
 		}
 	}
 
@@ -186,8 +197,19 @@ func (c *Client) SummarizeContent(ctx context.Context, opts SummarizeOpts) ([]Su
 		if err2 := json.Unmarshal([]byte(responseText), &single); err2 == nil && single.Title != "" {
 			stories = []SummarizedStory{single}
 		} else {
-			return nil, resp.TokensUsed, resp.Provider, resp.Model,
-				fmt.Errorf("failed to parse stories JSON from %s: %w (response: %.500s)", provider.Name(), err, responseText)
+			// AI sometimes wraps the array in an object like {"stories": [...]}
+			var wrapper map[string]json.RawMessage
+			if err3 := json.Unmarshal([]byte(responseText), &wrapper); err3 == nil {
+				for _, v := range wrapper {
+					if err4 := json.Unmarshal(v, &stories); err4 == nil && len(stories) > 0 {
+						break
+					}
+				}
+			}
+			if len(stories) == 0 {
+				return nil, resp.TokensUsed, resp.Provider, resp.Model,
+					fmt.Errorf("failed to parse stories JSON from %s: %w (response: %.500s)", provider.Name(), err, responseText)
+			}
 		}
 	}
 
