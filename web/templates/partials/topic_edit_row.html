@@ -32,6 +32,7 @@
                 <select name="ai_provider" class="form-input">
                     <option value="" {{if eq .AIProvider ""}}selected{{end}}>Default</option>
                     <option value="gemini" {{if eq .AIProvider "gemini"}}selected{{end}}>Gemini</option>
+                    <option value="chutes" {{if eq .AIProvider "chutes"}}selected{{end}}>Chutes.ai</option>
                     <option value="ollama" {{if eq .AIProvider "ollama"}}selected{{end}}>Ollama</option>
                 </select>
             </div>

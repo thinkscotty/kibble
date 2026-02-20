@@ -142,6 +142,7 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.Handle("POST /settings/apikey/regenerate", s.requireAuth(http.HandlerFunc(s.handleAPIKeyRegenerate)))
 	mux.Handle("POST /settings/ollama/test", s.requireAuth(http.HandlerFunc(s.handleOllamaTest)))
 	mux.Handle("GET /settings/ollama/models", s.requireAuth(http.HandlerFunc(s.handleOllamaModels)))
+	mux.Handle("POST /settings/chutes/test", s.requireAuth(http.HandlerFunc(s.handleChutesTest)))
 	mux.Handle("POST /settings/update/check", s.requireAuth(http.HandlerFunc(s.handleUpdateCheck)))
 	mux.Handle("POST /settings/update/install", s.requireAuth(http.HandlerFunc(s.handleUpdateInstall)))
 }

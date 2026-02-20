@@ -243,6 +243,8 @@ func (db *DB) seedSettings() error {
 		"ai_provider":                   "gemini",
 		"ollama_url":                    "http://localhost:11434",
 		"ollama_model":                  "mistral-nemo",
+		"chutes_api_key":                "",
+		"chutes_model":                  "deepseek-ai/DeepSeek-V3",
 	}
 
 	stmt, err := db.conn.Prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`)

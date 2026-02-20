@@ -51,6 +51,8 @@ func (s *Server) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		"ai_provider",
 		"ollama_url",
 		"ollama_model",
+		"chutes_api_key",
+		"chutes_model",
 		"ai_custom_instructions",
 		"ai_tone_instructions",
 		"news_sourcing_instructions",
@@ -168,6 +170,28 @@ func (s *Server) handleOllamaModels(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `<option value="%s"%s>%s</option>`,
 			template.HTMLEscapeString(m.Name), selected, template.HTMLEscapeString(label))
 	}
+}
+
+func (s *Server) handleChutesTest(w http.ResponseWriter, r *http.Request) {
+	apiKey := r.FormValue("chutes_api_key")
+	if apiKey == "" {
+		w.Write([]byte(`<span class="text-error">Please enter an API key first</span>`))
+		return
+	}
+
+	// Save the model so the test uses the current value
+	if model := r.FormValue("chutes_model"); model != "" {
+		s.db.SetSetting("chutes_model", model)
+	}
+
+	err := s.ai.TestChutesKey(r.Context(), apiKey)
+	if err != nil {
+		slog.Error("Chutes API key test failed", "error", err)
+		w.Write([]byte(`<span class="text-error">API key test failed: ` + template.HTMLEscapeString(err.Error()) + `</span>`))
+		return
+	}
+
+	w.Write([]byte(`<span class="text-success">API key is valid!</span>`))
 }
 
 func (s *Server) handleAPIKeyRegenerate(w http.ResponseWriter, r *http.Request) {

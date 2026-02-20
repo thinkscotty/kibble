@@ -18,6 +18,7 @@
             <label for="ai_provider">Primary AI Provider</label>
             <select id="ai_provider" name="ai_provider" class="form-input">
                 <option value="gemini" {{if eq (index .Settings "ai_provider") "gemini"}}selected{{end}}>Gemini (Cloud)</option>
+                <option value="chutes" {{if eq (index .Settings "ai_provider") "chutes"}}selected{{end}}>Chutes.ai (Cloud)</option>
                 <option value="ollama" {{if eq (index .Settings "ai_provider") "ollama"}}selected{{end}}>Ollama (Local)</option>
             </select>
         </div>
@@ -44,6 +45,37 @@
             </div>
         </div>
         <div id="apikey-test-result"></div>
+
+        <hr style="border-color: var(--border); margin: 1rem 0;">
+
+        <h4 style="margin-bottom: 0.5rem;">Chutes.ai Configuration</h4>
+        <p class="text-muted text-sm">Connect to <a href="https://chutes.ai" target="_blank" rel="noopener">Chutes.ai</a> for access to 60+ open-source models. Get an API key from your Chutes.ai dashboard.</p>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="chutes_api_key">API Key</label>
+                <input type="password" id="chutes_api_key" name="chutes_api_key"
+                       value="{{index .Settings "chutes_api_key"}}"
+                       placeholder="Enter your Chutes.ai API key"
+                       class="form-input">
+            </div>
+            <div class="form-group form-group-sm" style="align-self: flex-end;">
+                <button type="button" class="btn btn-secondary"
+                        hx-post="/settings/chutes/test"
+                        hx-target="#chutes-test-result"
+                        hx-include="[name='chutes_api_key'],[name='chutes_model']">
+                    Test Key
+                </button>
+            </div>
+        </div>
+        <div id="chutes-test-result"></div>
+        <div class="form-group" style="margin-top: 0.5rem;">
+            <label for="chutes_model">Model</label>
+            <p class="text-muted text-sm">Enter the model identifier in <code>provider/model-name</code> format (e.g., <code>deepseek-ai/DeepSeek-V3</code>).</p>
+            <input type="text" id="chutes_model" name="chutes_model"
+                   value="{{index .Settings "chutes_model"}}"
+                   placeholder="deepseek-ai/DeepSeek-V3"
+                   class="form-input">
+        </div>
 
         <hr style="border-color: var(--border); margin: 1rem 0;">
 

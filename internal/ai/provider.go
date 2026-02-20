@@ -10,7 +10,7 @@ type SettingsGetter interface {
 // Provider is the interface that all AI backends must implement.
 type Provider interface {
 	Chat(ctx context.Context, req ChatRequest) (*ChatResponse, error)
-	Name() string // "gemini" or "ollama"
+	Name() string // "gemini", "ollama", or "chutes"
 }
 
 // ChatRequest is a provider-agnostic request.

@@ -16,22 +16,24 @@ import (
 type Client struct {
 	gemini   *GeminiProvider
 	ollama   *OllamaProvider
+	chutes   *ChutesProvider
 	settings SettingsGetter
 	wiki     *wikipedia.Client
 }
 
-// NewClient creates an AI client with both providers and optional Wikipedia client.
+// NewClient creates an AI client with all providers and optional Wikipedia client.
 func NewClient(sg SettingsGetter, wiki *wikipedia.Client) *Client {
 	return &Client{
 		gemini:   NewGeminiProvider(sg),
 		ollama:   NewOllamaProvider(sg),
+		chutes:   NewChutesProvider(sg),
 		settings: sg,
 		wiki:     wiki,
 	}
 }
 
 // resolveProvider returns the correct provider based on per-topic override or global setting.
-// topicProvider: "" means use global default, "gemini" or "ollama" means use that provider.
+// topicProvider: "" means use global default, "gemini", "ollama", or "chutes" selects that provider.
 func (c *Client) resolveProvider(topicProvider string) Provider {
 	provider := topicProvider
 	if provider == "" {
@@ -41,6 +43,8 @@ func (c *Client) resolveProvider(topicProvider string) Provider {
 	switch provider {
 	case "ollama":
 		return c.ollama
+	case "chutes":
+		return c.chutes
 	default:
 		return c.gemini
 	}
@@ -205,6 +209,12 @@ func (c *Client) TestOllamaConnection(ctx context.Context) error {
 // TestGeminiKey verifies a Gemini API key.
 func (c *Client) TestGeminiKey(ctx context.Context, apiKey string) error {
 	return c.gemini.TestAPIKey(ctx, apiKey)
+}
+
+// TestChutesKey verifies a Chutes.ai API key.
+func (c *Client) TestChutesKey(ctx context.Context, apiKey string) error {
+	model, _ := c.settings.GetSetting("chutes_model")
+	return TestChutesKey(ctx, apiKey, model)
 }
 
 // GenerateSearchQueries asks the AI to produce search queries for researching a topic.
