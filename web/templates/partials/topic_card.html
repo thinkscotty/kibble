@@ -21,7 +21,7 @@
             {{range .Facts}}
             <div class="fact-item" id="fact-{{.ID}}">
                 <p class="fact-content">{{.Content}}</p>
-                {{if .AIProvider}}<span class="badge badge-ai-source">{{if eq .AIProvider "ollama"}}{{.AIModel}}{{else}}Gemini{{end}}</span>{{end}}
+                {{if .AIProvider}}<span class="badge badge-ai-source">{{if eq .AIProvider "ollama"}}{{.AIModel}}{{else if eq .AIProvider "chutes"}}Chutes{{else}}Gemini{{end}}</span>{{end}}
             </div>
             {{end}}
         {{else}}

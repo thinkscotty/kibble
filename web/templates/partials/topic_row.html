@@ -8,7 +8,7 @@
         <span class="badge {{if .IsActive}}badge-active{{else}}badge-inactive{{end}}">
             {{if .IsActive}}Active{{else}}Inactive{{end}}
         </span>
-        {{if .AIProvider}}<span class="badge badge-ai">{{if eq .AIProvider "ollama"}}Ollama{{else}}Gemini{{end}}</span>{{end}}
+        {{if .AIProvider}}<span class="badge badge-ai">{{if eq .AIProvider "ollama"}}Ollama{{else if eq .AIProvider "chutes"}}Chutes{{else}}Gemini{{end}}</span>{{end}}
         {{if .IsNiche}}<span class="badge badge-niche">Niche</span>{{end}}
         <span class="text-muted text-sm">{{.FactsPerRefresh}} facts / {{.RefreshIntervalMinutes}}min</span>
         <span class="text-muted text-sm">Last: {{timeAgo .LastRefreshedAt}}</span>

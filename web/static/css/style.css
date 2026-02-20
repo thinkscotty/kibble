@@ -554,8 +554,8 @@ a:hover {
 }
 
 .badge-ai-source {
-    background-color: rgba(99, 102, 241, 0.15);
-    color: #6366f1;
+    background-color: color-mix(in srgb, var(--secondary) 15%, transparent);
+    color: var(--secondary);
     font-size: 0.7rem;
 }
 
